@@ -108,6 +108,11 @@ export interface Patient {
   insightSummary?: string | null;
   /** @nullable */
   lastActivityAt?: string | null;
+  /**
+     * ISO timestamp of the last push reminder sent to this patient, if any
+     * @nullable
+     */
+  lastReminderAt?: string | null;
 }
 
 export interface PatientInput {

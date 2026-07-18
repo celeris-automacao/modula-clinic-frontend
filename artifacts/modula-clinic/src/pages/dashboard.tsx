@@ -46,15 +46,22 @@ export default function Dashboard() {
     isPending: markReadMutation.isPending,
   };
   const sendReminder = useNotifyPatient();
-  const [reminderSent, setReminderSent] = useState<Record<number, boolean>>({});
+  const [reminderSentLocal, setReminderSentLocal] = useState<Record<number, boolean>>({});
   const [, setLocation] = useLocation();
+
+  /** True if the patient already received a reminder today (server-side or this session) */
+  function reminderAlreadySentToday(patient: { id: number; lastReminderAt?: string | null }): boolean {
+    if (reminderSentLocal[patient.id]) return true;
+    if (!patient.lastReminderAt) return false;
+    return patient.lastReminderAt.slice(0, 10) === new Date().toISOString().slice(0, 10);
+  }
 
   function handleSendReminder(e: React.MouseEvent, patientId: number) {
     e.stopPropagation();
     sendReminder.mutate({ id: patientId }, {
       onSuccess: (data) => {
         if (data.sent) {
-          setReminderSent((prev) => ({ ...prev, [patientId]: true }));
+          setReminderSentLocal((prev) => ({ ...prev, [patientId]: true }));
         }
       },
     });
@@ -291,17 +298,17 @@ export default function Dashboard() {
                       <div className="flex items-center justify-end gap-2">
                         {patient.riskLevel === "high" && (
                           <button
-                            title={reminderSent[patient.id] ? "Lembrete enviado" : "Enviar lembrete ao paciente"}
-                            disabled={sendReminder.isPending || reminderSent[patient.id]}
+                            title={reminderAlreadySentToday(patient) ? "Lembrete já enviado hoje" : "Enviar lembrete ao paciente"}
+                            disabled={sendReminder.isPending || reminderAlreadySentToday(patient)}
                             onClick={(e) => handleSendReminder(e, patient.id)}
                             className={cn(
                               "inline-flex items-center justify-center w-9 h-9 rounded-xl transition-all",
-                              reminderSent[patient.id]
-                                ? "bg-emerald-100 text-emerald-600 cursor-default"
+                              reminderAlreadySentToday(patient)
+                                ? "bg-emerald-100 text-emerald-600 cursor-default opacity-60"
                                 : "bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white hover:shadow-[0_4px_14px_0_rgba(244,63,94,0.35)]",
                             )}
                           >
-                            {reminderSent[patient.id] ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                            {reminderAlreadySentToday(patient) ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                           </button>
                         )}
                         <button className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-muted text-muted-foreground group-hover:bg-sky-500 group-hover:text-white group-hover:shadow-[0_4px_14px_0_rgba(14,165,233,0.35)] transition-all">
