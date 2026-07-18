@@ -567,6 +567,21 @@ export default function PatientDetail() {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="py-2 space-y-3">
+                      {/* BR-050: block closure when no tasks have been logged for this treatment */}
+                      {treatment?.hasActivity === false && (
+                        <div
+                          data-testid="no-activity-warning"
+                          className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/20 p-4"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Nenhuma atividade registrada</p>
+                            <p className="text-xs text-amber-700/80 dark:text-amber-400/70 mt-0.5">
+                              É necessário ao menos uma tarefa concluída para encerrar o tratamento. Registre uma atividade antes de continuar.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className="rounded-xl border border-border p-4 space-y-1.5">
                         <p className="text-sm font-bold text-foreground flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Concluído
@@ -592,14 +607,14 @@ export default function PatientDetail() {
                       <Button
                         variant="outline"
                         onClick={handleCancelTreatment}
-                        disabled={completeTreatment.isPending || cancelTreatment.isPending}
+                        disabled={completeTreatment.isPending || cancelTreatment.isPending || treatment?.hasActivity === false}
                         className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold"
                       >
                         {cancelTreatment.isPending ? "Cancelando..." : "Cancelar tratamento"}
                       </Button>
                       <Button
                         onClick={handleCompleteTreatment}
-                        disabled={completeTreatment.isPending || cancelTreatment.isPending}
+                        disabled={completeTreatment.isPending || cancelTreatment.isPending || treatment?.hasActivity === false}
                         className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 border-0 font-bold"
                       >
                         {completeTreatment.isPending ? "Encerrando..." : "Marcar como concluído"}

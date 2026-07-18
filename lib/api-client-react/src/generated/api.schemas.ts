@@ -270,6 +270,8 @@ export interface TreatmentDetail {
   status: string;
   startedAt: string;
   durationWeeks: number;
+  /** True when at least one task log exists for this treatment (BR-050) */
+  hasActivity: boolean;
   tasks: ProtocolTask[];
 }
 

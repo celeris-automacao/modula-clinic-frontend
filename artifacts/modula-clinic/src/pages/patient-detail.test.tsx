@@ -127,6 +127,84 @@ describe('PatientDetail page', () => {
     render(<PatientDetail />, { wrapper: makeWrapper() });
     screen.getByText('Radar de Adesão');
   });
+
+  it('shows a no-activity warning and disables close buttons when treatment has no activity', async () => {
+    vi.mocked(apiClient.useGetPatient).mockReturnValue({
+      isLoading: false,
+      data: { id: 1, name: 'Maria Souza', goal: 'Emagrecimento', age: 35, hasActiveTreatment: true },
+    } as any);
+
+    vi.mocked(apiClient.useGetPatientAdherence).mockReturnValue({
+      isLoading: false,
+      data: {
+        score: 0, trend: 'stable', riskLevel: 'none',
+        currentStreakDays: 0, missedLast3Days: 0, weeklyCompletionPct: 0,
+        computedAt: new Date().toISOString(), categoryBreakdown: [],
+      },
+    } as any);
+
+    // hasActivity: false — no task logs recorded for this treatment yet
+    vi.mocked(apiClient.useGetActiveTreatment).mockReturnValue({
+      data: {
+        id: 10, patientId: 1, protocolId: 1,
+        protocolName: 'Protocolo Padrão', status: 'active',
+        startedAt: new Date().toISOString(), durationWeeks: 12,
+        hasActivity: false, tasks: [],
+      },
+    } as any);
+
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    render(<PatientDetail />, { wrapper: makeWrapper() });
+
+    await user.click(screen.getByRole('button', { name: /encerrar tratamento/i }));
+
+    expect(screen.getByTestId('no-activity-warning')).toBeInTheDocument();
+    screen.getByText('Nenhuma atividade registrada');
+
+    // Both action buttons must be disabled (BR-050)
+    expect(screen.getByRole('button', { name: /cancelar tratamento/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /marcar como concluído/i })).toBeDisabled();
+  });
+
+  it('does not show the warning and leaves close buttons enabled when treatment has historical activity but score is 0', async () => {
+    vi.mocked(apiClient.useGetPatient).mockReturnValue({
+      isLoading: false,
+      data: { id: 1, name: 'Maria Souza', goal: 'Emagrecimento', age: 35, hasActiveTreatment: true },
+    } as any);
+
+    // Score can be 0 for many reasons (e.g. falling behind recently); hasActivity is the correct signal
+    vi.mocked(apiClient.useGetPatientAdherence).mockReturnValue({
+      isLoading: false,
+      data: {
+        score: 0, trend: 'stable', riskLevel: 'none',
+        currentStreakDays: 0, missedLast3Days: 0, weeklyCompletionPct: 0,
+        computedAt: new Date().toISOString(), categoryBreakdown: [],
+      },
+    } as any);
+
+    // hasActivity: true — logs exist even though current adherence window is 0
+    vi.mocked(apiClient.useGetActiveTreatment).mockReturnValue({
+      data: {
+        id: 10, patientId: 1, protocolId: 1,
+        protocolName: 'Protocolo Padrão', status: 'active',
+        startedAt: new Date().toISOString(), durationWeeks: 12,
+        hasActivity: true, tasks: [],
+      },
+    } as any);
+
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    render(<PatientDetail />, { wrapper: makeWrapper() });
+
+    await user.click(screen.getByRole('button', { name: /encerrar tratamento/i }));
+
+    expect(screen.queryByTestId('no-activity-warning')).not.toBeInTheDocument();
+
+    // Buttons must remain enabled — the backend decides if closure is valid
+    expect(screen.getByRole('button', { name: /cancelar tratamento/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /marcar como concluído/i })).not.toBeDisabled();
+  });
 });
 
 // ─── Photo thumbnail tests (BR-photo) ─────────────────────────────────────

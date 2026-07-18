@@ -2718,9 +2718,9 @@ export const getMarkAlertReadUrl = (id: number,) => {
 /**
  * @summary Mark an alert as read (professionals only)
  */
-export const markAlertRead = async (id: number, options?: RequestInit): Promise<Alert> => {
+export const markAlertRead = async (id: number, options?: RequestInit): Promise<ApiMessage> => {
 
-  return customFetch<Alert>(getMarkAlertReadUrl(id),
+  return customFetch<ApiMessage>(getMarkAlertReadUrl(id),
   {
     ...options,
     method: 'PATCH'
