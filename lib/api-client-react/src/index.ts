@@ -4,14 +4,8 @@ export { setBaseUrl, setAuthTokenGetter } from "./custom-fetch";
 export type { AuthTokenGetter } from "./custom-fetch";
 // AlertItem is a backward-compat alias for the generated Alert schema.
 export type { AlertItem } from "./alerts";
+// Treatment history hooks live in extensions (not generated) until the spec includes the endpoint.
 export {
-  useListAlerts,
-  getListAlertsQueryKey,
-  getListAlertsUrl,
-  useMarkAlertRead,
-  getMarkAlertReadUrl,
-  useCheckAlerts,
-  getCheckAlertsUrl,
   useGetPatientTreatments,
   getGetPatientTreatmentsQueryKey,
   getGetPatientTreatmentsUrl,
