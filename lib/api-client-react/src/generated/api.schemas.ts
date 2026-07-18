@@ -51,6 +51,32 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface UploadUrlRequest {
+  /**
+     * Original file name.
+     * @minLength 1
+     */
+  name: string;
+  /**
+     * File size in bytes.
+     * @minimum 1
+     */
+  size: number;
+  /**
+     * MIME type of the file (e.g. image/jpeg).
+     * @minLength 1
+     */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  /** Presigned GCS URL for PUT upload. */
+  uploadURL: string;
+  /** Normalized object path (e.g. /objects/uploads/uuid). Store this in your database. */
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
 export interface ApiMessage {
   error: string;
 }
@@ -344,10 +370,15 @@ export interface TodayTask {
      */
   valueNumber?: number | null;
   /**
-     * Base64 data URL of the logged photo (photo-category tasks only)
+     * Base64 data URL of the logged photo — legacy fallback for old records
      * @nullable
      */
   photoDataUrl?: string | null;
+  /**
+     * Serving path for the uploaded photo (e.g. /api/storage/objects/uploads/uuid)
+     * @nullable
+     */
+  photoUrl?: string | null;
 }
 
 export interface TaskLogInput {
@@ -356,8 +387,10 @@ export interface TaskLogInput {
   note?: string;
   /** Optional numeric value e.g. weight */
   valueNumber?: number;
-  /** Base64 data URL (data:image/...) — required for photo-category tasks */
+  /** Base64 data URL (data:image/...) — deprecated, use photoObjectPath */
   photoDataUrl?: string;
+  /** Object path returned by /storage/uploads/request-url (e.g. /objects/uploads/uuid) */
+  photoObjectPath?: string;
 }
 
 export type AdherenceDetailRiskLevel = typeof AdherenceDetailRiskLevel[keyof typeof AdherenceDetailRiskLevel];

@@ -1223,9 +1223,28 @@ function InlineMandatoryLogForm({
           toast({ title: "Registro criado", description: `${label} registrado com sucesso.` });
         },
         onError: (err: unknown) => {
+          // BR-035: conflito de período — o paciente acabou de registrar a mesma
+          // tarefa. Atualiza o estado de obrigatórias pendentes e mostra uma
+          // mensagem amigável em vez de um erro genérico.
+          const status =
+            err && typeof err === "object" && "status" in err && typeof (err as { status?: unknown }).status === "number"
+              ? (err as { status: number }).status
+              : undefined;
+          if (status === 409) {
+            queryClient.invalidateQueries({ queryKey: getGetActiveTreatmentQueryKey(patientId) });
+            queryClient.invalidateQueries({ queryKey: getGetTodayTasksQueryKey(patientId) });
+            queryClient.invalidateQueries({ queryKey: getGetPatientAdherenceQueryKey(patientId) });
+            toast({
+              title: "Tarefa já registrada",
+              description: `${label} já foi registrado neste período — provavelmente pelo próprio paciente. A tela foi atualizada.`,
+            });
+            return;
+          }
+          const data =
+            err && typeof err === "object" && "data" in err ? (err as { data?: unknown }).data : err;
           const message =
-            err && typeof err === "object" && "error" in err && typeof (err as { error?: unknown }).error === "string"
-              ? (err as { error: string }).error
+            data && typeof data === "object" && "error" in data && typeof (data as { error?: unknown }).error === "string"
+              ? (data as { error: string }).error
               : "Não foi possível criar o registro.";
           toast({ title: "Erro", description: message, variant: "destructive" });
         },

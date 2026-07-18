@@ -42,6 +42,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useCancelTreatment: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useLinkPatientAccount: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useCreateTaskLog: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useUpdatePatientGoalWeight: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useGetPatientTreatments: vi.fn(() => ({ data: [], isLoading: false })),
   useGetTodayTasks: vi.fn(() => ({ data: undefined })),
   getGetPatientQueryKey: (id: number) => ['patient', id],
@@ -53,6 +54,11 @@ vi.mock('@workspace/api-client-react', () => ({
   getGetTodayTasksQueryKey: (id: number) => ['todayTasks', id],
   getListPatientsQueryKey: () => ['patients'],
   getGetPatientTreatmentsQueryKey: (id: number) => ['treatments', id],
+}));
+
+const toastSpy = vi.fn();
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({ toast: toastSpy }),
 }));
 
 vi.mock('wouter', () => ({
@@ -255,6 +261,58 @@ describe('PatientDetail page', () => {
     expect(mutate).toHaveBeenCalledWith(
       { data: { taskId: 101, patientId: 1, valueNumber: 82.5 } },
       expect.anything(),
+    );
+  });
+
+  it('shows a friendly toast and refreshes state on a duplicate-period (409) rejection', async () => {
+    toastSpy.mockClear();
+    vi.mocked(apiClient.useGetPatient).mockReturnValue({
+      isLoading: false,
+      data: { id: 1, name: 'Maria Souza', goal: 'Emagrecimento', age: 35, hasActiveTreatment: true },
+    } as any);
+
+    vi.mocked(apiClient.useGetPatientAdherence).mockReturnValue({
+      isLoading: false,
+      data: {
+        score: 50, trend: 'stable', riskLevel: 'none',
+        currentStreakDays: 0, missedLast3Days: 0, weeklyCompletionPct: 50,
+        computedAt: new Date().toISOString(), categoryBreakdown: [],
+      },
+    } as any);
+
+    vi.mocked(apiClient.useGetActiveTreatment).mockReturnValue({
+      data: {
+        id: 10, patientId: 1, protocolId: 1,
+        protocolName: 'Protocolo Padrão', status: 'active',
+        startedAt: new Date().toISOString(), durationWeeks: 12,
+        hasActivity: true,
+        missingMandatoryCategories: ['weight'],
+        tasks: [
+          { id: 101, title: 'Pesagem semanal', category: 'weight', frequency: 'weekly', mandatory: true },
+        ],
+      },
+    } as any);
+
+    // Simulate the server rejecting with BR-035 duplicate-period conflict
+    const mutate = vi.fn((_vars: unknown, opts?: { onError?: (err: unknown) => void }) => {
+      opts?.onError?.({ status: 409, data: { error: 'Tarefa já registrada neste período de frequência (BR-035)' } });
+    });
+    vi.mocked(apiClient.useCreateTaskLog).mockReturnValue({ mutate, isPending: false } as any);
+
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    render(<PatientDetail />, { wrapper: makeWrapper() });
+
+    await user.click(screen.getByRole('button', { name: /encerrar tratamento/i }));
+    await user.type(screen.getByLabelText('Peso'), '82.5');
+    await user.click(screen.getByRole('button', { name: /registrar/i }));
+
+    // Friendly message, not a generic destructive error
+    expect(toastSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Tarefa já registrada' }),
+    );
+    expect(toastSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ variant: 'destructive' }),
     );
   });
 
