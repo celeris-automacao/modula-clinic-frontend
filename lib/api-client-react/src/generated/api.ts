@@ -21,6 +21,7 @@ import type {
 
 import type {
   AdherenceDetail,
+  Alert,
   AlertCheckResult,
   AlertItem,
   ApiMessage,
@@ -2385,6 +2386,77 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+// ─── Alerts ──────────────────────────────────────────────────────────────────
+
+export const getListAlertsUrl = () => `/api/alerts`;
+
+/**
+ * @summary List all alerts for the clinic (professionals only)
+ */
+export const listAlerts = async (options?: RequestInit): Promise<Alert[]> => {
+  return customFetch<Alert[]>(getListAlertsUrl(), { ...options, method: 'GET' });
+};
+
+export const getListAlertsQueryKey = () => [`/api/alerts`] as const;
+
+export const getListAlertsQueryOptions = <TData = Awaited<ReturnType<typeof listAlerts>>, TError = ErrorType<unknown>>(
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof listAlerts>>, TError, TData>; request?: SecondParameter<typeof customFetch> }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListAlertsQueryKey();
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listAlerts>>> = ({ signal }) => listAlerts({ signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof listAlerts>>, TError, TData> & { queryKey: QueryKey };
+};
+
+export type ListAlertsQueryResult = NonNullable<Awaited<ReturnType<typeof listAlerts>>>;
+export type ListAlertsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all alerts for the clinic (professionals only)
+ */
+export function useListAlerts<TData = Awaited<ReturnType<typeof listAlerts>>, TError = ErrorType<unknown>>(
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof listAlerts>>, TError, TData>; request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAlertsQueryOptions(options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+// ─── Mark alert read ──────────────────────────────────────────────────────────
+
+export const getMarkAlertReadUrl = (id: number) => `/api/alerts/${id}/read`;
+
+/**
+ * @summary Mark an alert as read (professionals only)
+ */
+export const markAlertRead = async (id: number, options?: RequestInit): Promise<Alert> => {
+  return customFetch<Alert>(getMarkAlertReadUrl(id), { ...options, method: 'PATCH' });
+};
+
+export const getMarkAlertReadMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof markAlertRead>>, TError, { id: number }, TContext>; request?: SecondParameter<typeof customFetch> }
+): UseMutationOptions<Awaited<ReturnType<typeof markAlertRead>>, TError, { id: number }, TContext> => {
+  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
+  const mutationKey = mutationOptions?.mutationKey ?? ['markAlertRead'];
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAlertRead>>, { id: number }> = (props) => {
+    const { id } = props ?? {};
+    return markAlertRead(id, requestOptions);
+  };
+  return { mutationKey, mutationFn, ...mutationOptions };
+};
+
+export type MarkAlertReadMutationResult = NonNullable<Awaited<ReturnType<typeof markAlertRead>>>;
+export type MarkAlertReadMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Mark an alert as read (professionals only)
+ */
+export const useMarkAlertRead = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof markAlertRead>>, TError, { id: number }, TContext>; request?: SecondParameter<typeof customFetch> }
+): UseMutationResult<Awaited<ReturnType<typeof markAlertRead>>, TError, { id: number }, TContext> => {
+  return useMutation(getMarkAlertReadMutationOptions(options));
+};
 
 
 

@@ -12,12 +12,14 @@ import {
   useCompleteTreatment,
   useCancelTreatment,
   useLinkPatientAccount,
+  useGetTodayTasks,
   getGetPatientQueryKey,
   getGetPatientAdherenceQueryKey,
   getGetPatientProgressQueryKey,
   getGetActiveTreatmentQueryKey,
   getGetLatestInsightQueryKey,
   getGetDashboardSummaryQueryKey,
+  getGetTodayTasksQueryKey,
   getListPatientsQueryKey
 } from "@workspace/api-client-react";
 import {
@@ -32,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { RadarScore, RiskBadge, TrendIcon } from "@/components/adherence-ui";
-import { AlertCircle, AlertTriangle, BrainCircuit, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Flame, History, Sparkles, Stethoscope, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, BrainCircuit, Camera, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Flame, History, ImageIcon, Sparkles, Stethoscope, XCircle } from "lucide-react";
 import { Link } from "wouter";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -83,11 +85,16 @@ export default function PatientDetail() {
     query: { enabled: !!id, queryKey: getGetPatientTreatmentsQueryKey(id) },
   });
 
+  const { data: todayTasks } = useGetTodayTasks(id, {
+    query: { enabled: !!id && !!patient?.hasActiveTreatment, queryKey: getGetTodayTasksQueryKey(id) },
+  });
+
   const generateInsight = useGenerateInsight();
   const completeTreatment = useCompleteTreatment();
   const cancelTreatment = useCancelTreatment();
   const [closeTreatmentOpen, setCloseTreatmentOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -289,6 +296,100 @@ export default function PatientDetail() {
                 </div>
               </div>
             </div>
+            {/* Today's Tasks — BR-photo: fotos dos pacientes visíveis para profissionais */}
+            {todayTasks && todayTasks.length > 0 && (
+              <div className="bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-card-border overflow-hidden">
+                <div className="p-6 border-b border-border">
+                  <h2 className="text-base font-extrabold text-foreground tracking-tight flex items-center gap-2">
+                    <CheckCircle2 className="w-4.5 h-4.5 text-sky-500" /> Tarefas de Hoje
+                  </h2>
+                </div>
+                <div className="divide-y divide-border">
+                  {todayTasks.map((task) => (
+                    <div key={task.taskId} className="px-6 py-4 flex items-start gap-4">
+                      {/* Completion indicator */}
+                      <div className={cn(
+                        "w-5 h-5 rounded-full shrink-0 mt-0.5 flex items-center justify-center border-2",
+                        task.completedToday
+                          ? "bg-emerald-500 border-emerald-500"
+                          : "border-muted-foreground/30 bg-transparent"
+                      )}>
+                        {task.completedToday && (
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={cn(
+                            "text-sm font-semibold",
+                            task.completedToday ? "text-foreground" : "text-muted-foreground"
+                          )}>
+                            {task.title}
+                          </span>
+                          <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                            {TASK_TYPE_LABELS[task.category] ?? task.category}
+                          </span>
+                          {task.mandatory && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Obrigatória</Badge>
+                          )}
+                        </div>
+                        {/* Text note */}
+                        {task.note && (
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{task.note}</p>
+                        )}
+                      </div>
+
+                      {/* Photo thumbnail — only for photo-category tasks with a recorded image */}
+                      {task.category === "photo" && task.photoDataUrl && (
+                        <button
+                          type="button"
+                          aria-label="Ver foto ampliada"
+                          onClick={() => setEnlargedPhoto(task.photoDataUrl!)}
+                          className="shrink-0 group relative rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-shadow w-16 h-16"
+                        >
+                          <img
+                            src={task.photoDataUrl}
+                            alt="Foto registrada pelo paciente"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                          </div>
+                        </button>
+                      )}
+
+                      {/* Placeholder icon for photo tasks not yet completed */}
+                      {task.category === "photo" && !task.photoDataUrl && (
+                        <div className="shrink-0 w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30">
+                          <Camera className="w-5 h-5 text-muted-foreground/40" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Enlarged photo dialog */}
+            <Dialog open={!!enlargedPhoto} onOpenChange={(open) => { if (!open) setEnlargedPhoto(null); }}>
+              <DialogContent className="max-w-2xl p-2">
+                <DialogHeader className="sr-only">
+                  <DialogTitle>Foto registrada pelo paciente</DialogTitle>
+                  <DialogDescription>Imagem ampliada enviada pelo paciente</DialogDescription>
+                </DialogHeader>
+                {enlargedPhoto && (
+                  <img
+                    src={enlargedPhoto}
+                    alt="Foto registrada pelo paciente"
+                    className="w-full rounded-xl object-contain max-h-[80vh]"
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
+
           </div>
 
           {/* Sidebar Column */}
