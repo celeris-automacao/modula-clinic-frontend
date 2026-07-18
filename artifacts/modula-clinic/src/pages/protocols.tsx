@@ -38,10 +38,6 @@ const TASK_TYPES = [
 
 const TASK_TYPE_LABELS: Record<string, string> = {
   ...Object.fromEntries(TASK_TYPES.map((t) => [t.value, t.label])),
-  // legacy categories still present in seeded protocols
-  hydration: "Hidratação",
-  habit: "Hábito",
-  measurement: "Medição",
 };
 
 const ORIGIN_FILTERS = [
