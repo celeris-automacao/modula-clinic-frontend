@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Modula Clinic"
+version = "1.0.0"
+id = "artifacts/modula-clinic"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21466
+
+[services.development]
+run = "pnpm --filter @workspace/modula-clinic run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/modula-clinic", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/modula-clinic/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21466"
+BASE_PATH = "/"
