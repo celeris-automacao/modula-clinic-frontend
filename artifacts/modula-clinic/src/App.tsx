@@ -26,6 +26,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/pacientes/:id" component={PatientDetail} />
         <Route path="/protocolos" component={Protocols} />
+        <Route path="/protocolos/:id" component={Protocols} />
         <Route path="/jornada" component={Journey} />
         <Route path="/configuracoes" component={Settings} />
         <Route component={NotFound} />

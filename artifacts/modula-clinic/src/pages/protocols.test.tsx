@@ -15,10 +15,21 @@ import Protocols from './protocols';
 
 vi.mock('@workspace/api-client-react', () => ({
   useListProtocols: vi.fn(() => ({ data: undefined, isLoading: true })),
+  useListPatients: vi.fn(() => ({ data: undefined, isLoading: false })),
   useCreateProtocol: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   getListProtocolsQueryKey: () => ['protocols'],
+  getListPatientsQueryKey: () => ['patients'],
   ProtocolTaskInputCategory: {},
   ProtocolTaskInputFrequency: {},
+}));
+
+vi.mock('wouter', () => ({
+  useRoute: vi.fn(() => [false, null]),
+  useLocation: () => ['/protocolos', vi.fn()],
+  useSearch: () => '',
+  Link: ({ children, href, className }: any) => (
+    <a href={href} className={className}>{children}</a>
+  ),
 }));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -35,7 +46,7 @@ function makeWrapper() {
 describe('Protocols page', () => {
   it('renders without React warnings while protocols are loading', () => {
     render(<Protocols />, { wrapper: makeWrapper() });
-    screen.getByText('Biblioteca de Protocolos');
+    screen.getByText('Protocol Studio');
   });
 
   it('renders protocol cards when data is available', () => {
@@ -63,11 +74,20 @@ describe('Protocols page', () => {
   it('Select controls inside CreateProtocolDialog have controlled values from mount', () => {
     vi.mocked(apiClient.useListProtocols).mockReturnValue({
       isLoading: false,
-      data: [],
+      data: [
+        {
+          id: 1,
+          name: 'Protocolo A',
+          description: 'Descrição A',
+          durationWeeks: 8,
+          isPreset: true,
+          tasks: [],
+        },
+      ],
     } as any);
 
-    // Dialog is closed on mount — just verify the trigger renders without warnings
+    // Dialog is closed on mount — just verify the trigger card renders without warnings
     render(<Protocols />, { wrapper: makeWrapper() });
-    screen.getByText('Criar Protocolo');
+    screen.getByText('Criar protocolo personalizado');
   });
 });

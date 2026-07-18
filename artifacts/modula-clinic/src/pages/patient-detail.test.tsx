@@ -51,6 +51,7 @@ vi.mock('@workspace/api-client-react', () => ({
 vi.mock('wouter', () => ({
   useRoute: vi.fn(() => [true, { id: '1' }]),
   useLocation: () => ['/pacientes/1', vi.fn()],
+  useSearch: () => '',
   Link: ({
     children,
     href,

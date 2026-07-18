@@ -1,4 +1,4 @@
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation, useSearch } from "wouter";
 import {
   useGetPatient,
   useGetPatientAdherence,
@@ -796,8 +796,11 @@ function ApplyProtocolCard({ patientId, patientName }: { patientId: number; pati
   const publishTreatment = usePublishTreatment();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [selectedProtocolId, setSelectedProtocolId] = useState<string>("");
-  const [open, setOpen] = useState(false);
+  // Protocol Studio handoff: /pacientes/:id?protocolo=<id> pre-selects the protocol and opens the dialog
+  const searchString = useSearch();
+  const preselectedProtocolId = new URLSearchParams(searchString).get("protocolo") ?? "";
+  const [selectedProtocolId, setSelectedProtocolId] = useState<string>(preselectedProtocolId);
+  const [open, setOpen] = useState(!!preselectedProtocolId);
   const [extraTasks, setExtraTasks] = useState<{ title: string; category: string; frequency: string; mandatory: boolean }[]>([]);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskCategory, setTaskCategory] = useState<string>("free_text");
