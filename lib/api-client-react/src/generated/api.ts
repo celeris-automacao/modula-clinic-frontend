@@ -56,7 +56,8 @@ import type {
   TreatmentHistoryItem,
   TreatmentInput,
   TreatmentPublishResult,
-  TreatmentStatusResult
+  TreatmentStatusResult,
+  UpdateGoalWeightInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -523,6 +524,78 @@ export const useLinkPatientAccount = <TError = ErrorType<ApiMessage>,
         TContext
       > => {
       return useMutation(getLinkPatientAccountMutationOptions(options));
+    }
+
+export const getUpdatePatientGoalWeightUrl = (id: number,) => {
+
+
+
+
+  return `/api/patients/${id}/goal-weight`
+}
+
+/**
+ * @summary Set or clear the goal weight for a patient (professionals only)
+ */
+export const updatePatientGoalWeight = async (id: number,
+    updateGoalWeightInput: UpdateGoalWeightInput, options?: RequestInit): Promise<Patient> => {
+
+  return customFetch<Patient>(getUpdatePatientGoalWeightUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateGoalWeightInput)
+  }
+);}
+
+
+
+
+
+export const getUpdatePatientGoalWeightMutationOptions = <TError = ErrorType<ApiMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePatientGoalWeight>>, TError,{id: number;data: BodyType<UpdateGoalWeightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePatientGoalWeight>>, TError,{id: number;data: BodyType<UpdateGoalWeightInput>}, TContext> => {
+
+const mutationKey = ['updatePatientGoalWeight'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePatientGoalWeight>>, {id: number;data: BodyType<UpdateGoalWeightInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePatientGoalWeight(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePatientGoalWeightMutationResult = NonNullable<Awaited<ReturnType<typeof updatePatientGoalWeight>>>
+    export type UpdatePatientGoalWeightMutationBody = BodyType<UpdateGoalWeightInput>
+    export type UpdatePatientGoalWeightMutationError = ErrorType<ApiMessage>
+
+    /**
+ * @summary Set or clear the goal weight for a patient (professionals only)
+ */
+export const useUpdatePatientGoalWeight = <TError = ErrorType<ApiMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePatientGoalWeight>>, TError,{id: number;data: BodyType<UpdateGoalWeightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePatientGoalWeight>>,
+        TError,
+        {id: number;data: BodyType<UpdateGoalWeightInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePatientGoalWeightMutationOptions(options));
     }
 
 export const getGetPatientAdherenceUrl = (id: number,) => {

@@ -41,6 +41,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useCompleteTreatment: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useCancelTreatment: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useLinkPatientAccount: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useCreateTaskLog: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useGetPatientTreatments: vi.fn(() => ({ data: [], isLoading: false })),
   useGetTodayTasks: vi.fn(() => ({ data: undefined })),
   getGetPatientQueryKey: (id: number) => ['patient', id],
@@ -203,6 +204,95 @@ describe('PatientDetail page', () => {
 
     // Buttons must remain enabled — the backend decides if closure is valid
     expect(screen.getByRole('button', { name: /cancelar tratamento/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /marcar como concluído/i })).not.toBeDisabled();
+  });
+
+  it('shows an inline log form for each missing mandatory category and submits via createTaskLog', async () => {
+    vi.mocked(apiClient.useGetPatient).mockReturnValue({
+      isLoading: false,
+      data: { id: 1, name: 'Maria Souza', goal: 'Emagrecimento', age: 35, hasActiveTreatment: true },
+    } as any);
+
+    vi.mocked(apiClient.useGetPatientAdherence).mockReturnValue({
+      isLoading: false,
+      data: {
+        score: 50, trend: 'stable', riskLevel: 'none',
+        currentStreakDays: 0, missedLast3Days: 0, weeklyCompletionPct: 50,
+        computedAt: new Date().toISOString(), categoryBreakdown: [],
+      },
+    } as any);
+
+    vi.mocked(apiClient.useGetActiveTreatment).mockReturnValue({
+      data: {
+        id: 10, patientId: 1, protocolId: 1,
+        protocolName: 'Protocolo Padrão', status: 'active',
+        startedAt: new Date().toISOString(), durationWeeks: 12,
+        hasActivity: true,
+        missingMandatoryCategories: ['weight'],
+        tasks: [
+          { id: 101, title: 'Pesagem semanal', category: 'weight', frequency: 'weekly', mandatory: true },
+        ],
+      },
+    } as any);
+
+    const mutate = vi.fn();
+    vi.mocked(apiClient.useCreateTaskLog).mockReturnValue({ mutate, isPending: false } as any);
+
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    render(<PatientDetail />, { wrapper: makeWrapper() });
+
+    await user.click(screen.getByRole('button', { name: /encerrar tratamento/i }));
+
+    expect(screen.getByTestId('missing-mandatory-warning')).toBeInTheDocument();
+    const form = screen.getByTestId('inline-log-form-weight');
+    expect(form).toBeInTheDocument();
+
+    const input = screen.getByLabelText('Peso');
+    await user.type(input, '82.5');
+    await user.click(screen.getByRole('button', { name: /registrar/i }));
+
+    expect(mutate).toHaveBeenCalledWith(
+      { data: { taskId: 101, patientId: 1, valueNumber: 82.5 } },
+      expect.anything(),
+    );
+  });
+
+  it('hides the missing-mandatory warning once no categories are missing', async () => {
+    vi.mocked(apiClient.useGetPatient).mockReturnValue({
+      isLoading: false,
+      data: { id: 1, name: 'Maria Souza', goal: 'Emagrecimento', age: 35, hasActiveTreatment: true },
+    } as any);
+
+    vi.mocked(apiClient.useGetPatientAdherence).mockReturnValue({
+      isLoading: false,
+      data: {
+        score: 50, trend: 'stable', riskLevel: 'none',
+        currentStreakDays: 0, missedLast3Days: 0, weeklyCompletionPct: 50,
+        computedAt: new Date().toISOString(), categoryBreakdown: [],
+      },
+    } as any);
+
+    vi.mocked(apiClient.useGetActiveTreatment).mockReturnValue({
+      data: {
+        id: 10, patientId: 1, protocolId: 1,
+        protocolName: 'Protocolo Padrão', status: 'active',
+        startedAt: new Date().toISOString(), durationWeeks: 12,
+        hasActivity: true,
+        missingMandatoryCategories: [],
+        tasks: [
+          { id: 101, title: 'Pesagem semanal', category: 'weight', frequency: 'weekly', mandatory: true },
+        ],
+      },
+    } as any);
+
+    const { userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    render(<PatientDetail />, { wrapper: makeWrapper() });
+
+    await user.click(screen.getByRole('button', { name: /encerrar tratamento/i }));
+
+    expect(screen.queryByTestId('missing-mandatory-warning')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /marcar como concluído/i })).not.toBeDisabled();
   });
 });

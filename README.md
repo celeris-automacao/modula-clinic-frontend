@@ -39,8 +39,9 @@ server: {
 ## Estrutura
 
 - `artifacts/modula-clinic` — aplicação React (páginas em `src/pages`, tema em `src/index.css`)
-- `lib/api-spec` — contrato OpenAPI (copiado do repositório do backend)
-- `lib/api-client-react` — hooks React Query gerados (Orval)
+- `lib/api-client-react` — hooks React Query gerados (Orval) a partir do contrato OpenAPI
+- `lib/api-spec` — contrato OpenAPI (fonte da verdade) + codegen
+- `lib/replit-auth-web` — hook React para autenticação via Replit Auth (web)
 
 ## Sincronizando o contrato OpenAPI entre os repositórios
 

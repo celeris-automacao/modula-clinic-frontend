@@ -1,6 +1,7 @@
 {
   "name": "@workspace/replit-auth-web",
   "version": "0.0.0",
+  "description": "hook React para autenticação via Replit Auth (web)",
   "private": true,
   "type": "module",
   "exports": {

@@ -129,6 +129,14 @@ export interface PatientInput {
   nextAppointment?: string;
 }
 
+export interface UpdateGoalWeightInput {
+  /**
+     * Target weight in kg; null to clear
+     * @nullable
+     */
+  goalWeightKg: number | null;
+}
+
 export interface PatchPatientInput {
   /**
      * Replit user ID to link; null to unlink

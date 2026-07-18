@@ -13,6 +13,7 @@ import {
   useCancelTreatment,
   useLinkPatientAccount,
   useGetTodayTasks,
+  useCreateTaskLog,
   getGetPatientQueryKey,
   getGetPatientAdherenceQueryKey,
   getGetPatientProgressQueryKey,
@@ -26,6 +27,7 @@ import {
   useGetPatientTreatments,
   getGetPatientTreatmentsQueryKey,
   type TreatmentHistoryItem,
+  useUpdatePatientGoalWeight,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -103,9 +105,12 @@ export default function PatientDetail() {
   const generateInsight = useGenerateInsight();
   const completeTreatment = useCompleteTreatment();
   const cancelTreatment = useCancelTreatment();
+  const updateGoalWeight = useUpdatePatientGoalWeight();
   const [closeTreatmentOpen, setCloseTreatmentOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
+  const [goalWeightEditing, setGoalWeightEditing] = useState(false);
+  const [goalWeightInput, setGoalWeightInput] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -509,6 +514,94 @@ export default function PatientDetail() {
               </div>
             </div>
 
+            {/* Goal Weight */}
+            <div className="bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-card-border overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center justify-between">
+                <h2 className="text-base font-extrabold text-foreground tracking-tight">🎯 Peso-meta</h2>
+                {!goalWeightEditing && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground h-7"
+                    onClick={() => {
+                      setGoalWeightInput(patient.goalWeightKg?.toString() ?? "");
+                      setGoalWeightEditing(true);
+                    }}
+                  >
+                    {patient.goalWeightKg != null ? "Editar" : "Definir"}
+                  </Button>
+                )}
+              </div>
+              <div className="p-5">
+                {goalWeightEditing ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="20"
+                        max="300"
+                        placeholder="Ex: 70.5"
+                        value={goalWeightInput}
+                        onChange={(e) => setGoalWeightInput(e.target.value)}
+                        className="h-9"
+                        autoFocus
+                      />
+                      <span className="text-sm text-muted-foreground font-medium shrink-0">kg</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 h-8"
+                        disabled={updateGoalWeight.isPending}
+                        onClick={() => {
+                          const val = goalWeightInput.trim() === "" ? null : parseFloat(goalWeightInput);
+                          if (val !== null && isNaN(val)) return;
+                          updateGoalWeight.mutate(
+                            { id, data: { goalWeightKg: val } },
+                            {
+                              onSuccess: () => {
+                                setGoalWeightEditing(false);
+                                queryClient.invalidateQueries({ queryKey: getGetPatientQueryKey(id) });
+                                toast({ title: "Peso-meta atualizado" });
+                              },
+                              onError: () => {
+                                toast({ title: "Erro ao atualizar peso-meta", variant: "destructive" });
+                              },
+                            }
+                          );
+                        }}
+                      >
+                        {updateGoalWeight.isPending ? "Salvando..." : "Salvar"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8"
+                        onClick={() => setGoalWeightEditing(false)}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : patient.goalWeightKg != null ? (
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-extrabold text-foreground">{patient.goalWeightKg.toFixed(1)}</span>
+                    <span className="text-base font-bold text-muted-foreground">kg</span>
+                    {patient.currentWeightKg != null && (
+                      <span className="ml-2 text-sm font-medium text-muted-foreground">
+                        ({patient.currentWeightKg > patient.goalWeightKg
+                          ? `faltam ${(patient.currentWeightKg - patient.goalWeightKg).toFixed(1)} kg`
+                          : "✅ meta atingida!"})
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground font-medium">Nenhum peso-meta definido</p>
+                )}
+              </div>
+            </div>
+
             {/* Protocol Summary */}
             <div className="bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-card-border overflow-hidden">
               <div className="p-5 border-b border-border">
@@ -600,6 +693,23 @@ export default function PatientDetail() {
                               </strong>
                               . O encerramento ainda é permitido, mas estes dados clínicos serão perdidos.
                             </p>
+                            <div className="mt-3 space-y-2">
+                              {treatment!.missingMandatoryCategories!.map((cat) => {
+                                const task = treatment!.tasks?.find(
+                                  (t) => t.mandatory && t.category === cat
+                                );
+                                if (!task) return null;
+                                return (
+                                  <InlineMandatoryLogForm
+                                    key={cat}
+                                    patientId={id}
+                                    taskId={task.id}
+                                    category={cat}
+                                    label={TASK_TYPE_LABELS[cat] ?? cat}
+                                  />
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1060,5 +1170,120 @@ function ApplyProtocolCard({ patientId, patientName }: { patientId: number; pati
         </Dialog>
       </div>
     </div>
+  );
+}
+
+// Categories that log a numeric value in the inline mandatory-log form
+const NUMERIC_CATEGORIES = new Set(["weight", "water", "sleep", "mood", "exercise"]);
+
+// Compact inline form to log a missing mandatory task without leaving the
+// close-treatment dialog. On success the active-treatment query is
+// invalidated so the missing-mandatory warning updates automatically.
+function InlineMandatoryLogForm({
+  patientId,
+  taskId,
+  category,
+  label,
+}: {
+  patientId: number;
+  taskId: number;
+  category: string;
+  label: string;
+}) {
+  const [value, setValue] = useState("");
+  const createTaskLog = useCreateTaskLog();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const isNumeric = NUMERIC_CATEGORIES.has(category);
+  const isPhoto = category === "photo";
+
+  const submit = (photoDataUrl?: string) => {
+    if (!isPhoto) {
+      if (isNumeric && (value.trim() === "" || isNaN(Number(value)))) return;
+      if (!isNumeric && value.trim() === "") return;
+    }
+    createTaskLog.mutate(
+      {
+        data: {
+          taskId,
+          patientId,
+          ...(isPhoto
+            ? { photoDataUrl }
+            : isNumeric
+              ? { valueNumber: Number(value) }
+              : { note: value.trim() }),
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetActiveTreatmentQueryKey(patientId) });
+          queryClient.invalidateQueries({ queryKey: getGetPatientAdherenceQueryKey(patientId) });
+          queryClient.invalidateQueries({ queryKey: getGetTodayTasksQueryKey(patientId) });
+          queryClient.invalidateQueries({ queryKey: getGetPatientProgressQueryKey(patientId) });
+          toast({ title: "Registro criado", description: `${label} registrado com sucesso.` });
+        },
+        onError: (err: unknown) => {
+          const message =
+            err && typeof err === "object" && "error" in err && typeof (err as { error?: unknown }).error === "string"
+              ? (err as { error: string }).error
+              : "Não foi possível criar o registro.";
+          toast({ title: "Erro", description: message, variant: "destructive" });
+        },
+      },
+    );
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => submit(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <form
+      data-testid={`inline-log-form-${category}`}
+      className="flex items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      <Label htmlFor={`inline-log-${category}`} className="text-xs font-bold text-rose-800 dark:text-rose-300 w-20 shrink-0">
+        {label}
+      </Label>
+      {isPhoto ? (
+        <Input
+          id={`inline-log-${category}`}
+          type="file"
+          accept="image/*"
+          onChange={handlePhotoChange}
+          disabled={createTaskLog.isPending}
+          className="h-8 text-xs bg-white dark:bg-card"
+        />
+      ) : (
+        <>
+          <Input
+            id={`inline-log-${category}`}
+            type={isNumeric ? "number" : "text"}
+            step={isNumeric ? "any" : undefined}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={isNumeric ? "Valor" : "Anotação"}
+            disabled={createTaskLog.isPending}
+            className="h-8 text-xs bg-white dark:bg-card"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={createTaskLog.isPending || value.trim() === ""}
+            className="h-8 px-3 text-xs font-bold shrink-0"
+          >
+            {createTaskLog.isPending ? "Salvando..." : "Registrar"}
+          </Button>
+        </>
+      )}
+    </form>
   );
 }
