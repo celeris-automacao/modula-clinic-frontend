@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { PatientRiskLevel, PatientTrend, AdherenceDetailRiskLevel, AdherenceDetailTrend } from "@workspace/api-client-react";
 import { TrendingDown, TrendingUp, Minus, AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// BR-061: faixas oficiais do Radar
+// 🟢 70–100 Boa adesão | 🟡 40–69 Atenção | 🔴 0–39 Alto risco
 
 export function RiskBadge({ level }: { level: string }) {
   const prevLevel = useRef(level);
@@ -19,6 +21,7 @@ export function RiskBadge({ level }: { level: string }) {
 
   const pulseClass = pulse ? "motion-safe:animate-risk-pulse" : "";
 
+  // BR-061: labels oficiais DOC-003
   if (level === "high")
     return (
       <span className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] uppercase tracking-wider font-bold bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_4px_14px_0_rgba(225,29,72,0.35)]", pulseClass)}>
@@ -28,17 +31,17 @@ export function RiskBadge({ level }: { level: string }) {
   if (level === "medium")
     return (
       <span className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] uppercase tracking-wider font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-[0_4px_14px_0_rgba(251,191,36,0.35)]", pulseClass)}>
-        <AlertCircle className="w-3.5 h-3.5" /> Risco Médio
+        <AlertCircle className="w-3.5 h-3.5" /> Atenção
       </span>
     );
   if (level === "low")
     return (
       <span className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] uppercase tracking-wider font-bold bg-gradient-to-r from-emerald-400 to-teal-500 text-white shadow-[0_4px_14px_0_rgba(52,211,153,0.35)]", pulseClass)}>
-        <CheckCircle2 className="w-3.5 h-3.5" /> Baixo Risco
+        <CheckCircle2 className="w-3.5 h-3.5" /> Boa Adesão
       </span>
     );
   return (
-    <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-[11px] uppercase tracking-wider font-bold border border-slate-200 text-slate-400">
+    <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-[11px] uppercase tracking-wider font-bold border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500">
       Sem Risco
     </span>
   );
@@ -52,16 +55,17 @@ export function TrendIcon({ trend, className }: { trend: string, className?: str
 }
 
 export function RadarScore({ score, size = "md" }: { score: number, size?: "sm" | "md" | "lg" | "xl" }) {
-  const isGood = score >= 80;
-  const isWarning = score >= 50 && score < 80;
-  const isDanger = score < 50;
+  // BR-061: ≥70 boa adesão (verde), 40–69 atenção (âmbar), <40 alto risco (vermelho)
+  const isGood    = score >= 70;
+  const isWarning = score >= 40 && score < 70;
+  const isDanger  = score < 40;
 
   return (
     <div className={cn(
       "font-extrabold tabular-nums tracking-tighter",
-      isGood && "bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-400",
+      isGood    && "bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-400",
       isWarning && "bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-400",
-      isDanger && "bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-red-500",
+      isDanger  && "bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-red-500",
       size === "sm" && "text-lg",
       size === "md" && "text-2xl",
       size === "lg" && "text-4xl",
@@ -78,5 +82,5 @@ export function RadarScore({ score, size = "md" }: { score: number, size?: "sm" 
         %
       </span>
     </div>
-  )
+  );
 }

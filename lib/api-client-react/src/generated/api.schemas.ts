@@ -5,6 +5,48 @@
  * Modula Clinic — Smart Treatment Journey API
  * OpenAPI spec version: 0.1.0
  */
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
+export interface MobileTokenExchangeRequest {
+  /** @minLength 1 */
+  code: string;
+  /** @minLength 1 */
+  code_verifier: string;
+  /** @minLength 1 */
+  redirect_uri: string;
+  /** @minLength 1 */
+  state: string;
+  /** @minLength 1 */
+  nonce?: string;
+}
+
+export interface MobileTokenExchangeSuccess {
+  token: string;
+}
+
+export const LogoutSuccessValue = {
+  success: true,
+} as const;
+export type LogoutSuccess = typeof LogoutSuccessValue;
+
+export interface ErrorEnvelope {
+  error: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -45,6 +87,11 @@ export interface Patient {
   currentWeightKg?: number | null;
   /** @nullable */
   nextAppointment?: string | null;
+  /**
+     * Replit user ID linked to this patient, if any
+     * @nullable
+     */
+  userId?: string | null;
   /** 0-100 from Adherence Engine */
   adherenceScore: number;
   riskLevel: PatientRiskLevel;
@@ -52,6 +99,11 @@ export interface Patient {
   hasActiveTreatment: boolean;
   /** @nullable */
   protocolName?: string | null;
+  /**
+     * Latest AI insight summary, if any
+     * @nullable
+     */
+  insightSummary?: string | null;
   /** @nullable */
   lastActivityAt?: string | null;
 }
@@ -67,16 +119,27 @@ export interface PatientInput {
   nextAppointment?: string;
 }
 
+export interface PatchPatientInput {
+  /**
+     * Replit user ID to link; null to unlink
+     * @nullable
+     */
+  userId?: string | null;
+}
+
 export type ProtocolTaskCategory = typeof ProtocolTaskCategory[keyof typeof ProtocolTaskCategory];
 
 
 export const ProtocolTaskCategory = {
+  weight: 'weight',
+  water: 'water',
   nutrition: 'nutrition',
   exercise: 'exercise',
-  hydration: 'hydration',
-  measurement: 'measurement',
-  habit: 'habit',
+  sleep: 'sleep',
+  mood: 'mood',
   medication: 'medication',
+  photo: 'photo',
+  free_text: 'free_text',
 } as const;
 
 export type ProtocolTaskFrequency = typeof ProtocolTaskFrequency[keyof typeof ProtocolTaskFrequency];
@@ -94,18 +157,22 @@ export interface ProtocolTask {
   description?: string | null;
   category: ProtocolTaskCategory;
   frequency: ProtocolTaskFrequency;
+  mandatory?: boolean;
 }
 
 export type ProtocolTaskInputCategory = typeof ProtocolTaskInputCategory[keyof typeof ProtocolTaskInputCategory];
 
 
 export const ProtocolTaskInputCategory = {
+  weight: 'weight',
+  water: 'water',
   nutrition: 'nutrition',
   exercise: 'exercise',
-  hydration: 'hydration',
-  measurement: 'measurement',
-  habit: 'habit',
+  sleep: 'sleep',
+  mood: 'mood',
   medication: 'medication',
+  photo: 'photo',
+  free_text: 'free_text',
 } as const;
 
 export type ProtocolTaskInputFrequency = typeof ProtocolTaskInputFrequency[keyof typeof ProtocolTaskInputFrequency];
@@ -122,6 +189,7 @@ export interface ProtocolTaskInput {
   description?: string;
   category: ProtocolTaskInputCategory;
   frequency: ProtocolTaskInputFrequency;
+  mandatory?: boolean;
 }
 
 export interface Protocol {
@@ -150,6 +218,21 @@ export interface TreatmentInput {
   extraTasks?: ProtocolTaskInput[];
 }
 
+export interface TreatmentCreated {
+  id: number;
+  patientId: number;
+  protocolId: number;
+  status: string;
+  protocolName: string;
+  startedAt: string;
+  durationWeeks: number;
+}
+
+export interface TreatmentStatusResult {
+  id: number;
+  status: string;
+}
+
 export interface TreatmentDetail {
   id: number;
   patientId: number;
@@ -164,12 +247,15 @@ export type TodayTaskCategory = typeof TodayTaskCategory[keyof typeof TodayTaskC
 
 
 export const TodayTaskCategory = {
+  weight: 'weight',
+  water: 'water',
   nutrition: 'nutrition',
   exercise: 'exercise',
-  hydration: 'hydration',
-  measurement: 'measurement',
-  habit: 'habit',
+  sleep: 'sleep',
+  mood: 'mood',
   medication: 'medication',
+  photo: 'photo',
+  free_text: 'free_text',
 } as const;
 
 export type TodayTaskFrequency = typeof TodayTaskFrequency[keyof typeof TodayTaskFrequency];
@@ -187,9 +273,15 @@ export interface TodayTask {
   description?: string | null;
   category: TodayTaskCategory;
   frequency: TodayTaskFrequency;
+  mandatory?: boolean;
   completedToday: boolean;
   /** @nullable */
   note?: string | null;
+  /**
+     * Base64 data URL of the logged photo (photo-category tasks only)
+     * @nullable
+     */
+  photoDataUrl?: string | null;
 }
 
 export interface TaskLogInput {
@@ -198,6 +290,8 @@ export interface TaskLogInput {
   note?: string;
   /** Optional numeric value e.g. weight */
   valueNumber?: number;
+  /** Base64 data URL (data:image/...) — required for photo-category tasks */
+  photoDataUrl?: string;
 }
 
 export type AdherenceDetailRiskLevel = typeof AdherenceDetailRiskLevel[keyof typeof AdherenceDetailRiskLevel];
@@ -243,6 +337,13 @@ export interface TaskLogResult {
   adherence: AdherenceDetail;
 }
 
+export interface MeasurementPoint {
+  /** ISO date string YYYY-MM-DD */
+  date: string;
+  /** Measurement value e.g. weight in kg */
+  valueNumber: number;
+}
+
 export interface ProgressPoint {
   date: string;
   completed: number;
@@ -265,9 +366,32 @@ export interface Insight {
   patientId: number;
   /** Natural-language explanation of adherence */
   summary: string;
+  /** Key factors observed in the data */
+  observedFactors: string;
   suggestedAction: string;
   riskLevel: InsightRiskLevel;
   createdAt: string;
+}
+
+export interface PublishTreatmentResult {
+  id: number;
+  status: string;
+}
+
+export interface Alert {
+  id: number;
+  patientId: number;
+  patientName: string;
+  message: string;
+  riskLevel: string;
+  /** @nullable */
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface AlertCheckResult {
+  ok: boolean;
+  alertsCreated: number;
 }
 
 export interface DashboardSummary {
@@ -278,4 +402,23 @@ export interface DashboardSummary {
   avgAdherence: number;
   logsToday: number;
 }
+
+/**
+ * Opaque session token — `Bearer <sid>`.
+ */
+export type AuthorizationSessionHeaderParameter = string;
+
+export type BeginBrowserLoginParams = {
+returnTo?: string;
+};
+
+export type HandleBrowserLoginCallbackParams = {
+code?: string;
+state?: string;
+iss?: string;
+};
+
+export type LogoutBrowserSessionParams = {
+returnTo?: string;
+};
 

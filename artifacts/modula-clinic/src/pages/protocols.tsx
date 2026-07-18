@@ -108,12 +108,25 @@ function CreateProtocolDialog() {
   const [description, setDescription] = useState("");
   const [durationWeeks, setDurationWeeks] = useState("4");
 
-  const [tasks, setTasks] = useState<Array<{ title: string, category: string, frequency: string }>>([
-    { title: "", category: "habit", frequency: "daily" }
+  // BR-031: tipos oficiais de tarefa
+  const TASK_TYPES = [
+    { value: "weight",     label: "Peso" },
+    { value: "water",      label: "Água" },
+    { value: "nutrition",  label: "Alimentação" },
+    { value: "exercise",   label: "Exercício" },
+    { value: "sleep",      label: "Sono" },
+    { value: "mood",       label: "Humor" },
+    { value: "medication", label: "Medicamento" },
+    { value: "photo",      label: "Foto" },
+    { value: "free_text",  label: "Texto Livre" },
+  ] as const;
+
+  const [tasks, setTasks] = useState<Array<{title: string, category: string, frequency: string}>>([
+    { title: "", category: "free_text", frequency: "daily" }
   ]);
 
   const addTask = () => {
-    setTasks([...tasks, { title: "", category: "habit", frequency: "daily" }]);
+    setTasks([...tasks, { title: "", category: "free_text", frequency: "daily" }]);
   };
 
   const removeTask = (index: number) => {
@@ -153,7 +166,7 @@ function CreateProtocolDialog() {
         setName("");
         setDescription("");
         setDurationWeeks("4");
-        setTasks([{ title: "", category: "habit", frequency: "daily" }]);
+        setTasks([{ title: "", category: "free_text", frequency: "daily" }]);
       },
       onError: () => {
         toast({ title: "Erro", description: "Falha ao criar protocolo.", variant: "destructive" });
@@ -218,12 +231,9 @@ function CreateProtocolDialog() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="hydration">Hidratação</SelectItem>
-                          <SelectItem value="nutrition">Nutrição</SelectItem>
-                          <SelectItem value="exercise">Exercício</SelectItem>
-                          <SelectItem value="medication">Medicação</SelectItem>
-                          <SelectItem value="measurement">Medição</SelectItem>
-                          <SelectItem value="habit">Hábito</SelectItem>
+                          {TASK_TYPES.map(t => (
+                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <Select value={task.frequency} onValueChange={v => updateTask(index, 'frequency', v)}>
