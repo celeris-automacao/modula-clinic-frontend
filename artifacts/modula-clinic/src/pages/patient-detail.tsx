@@ -582,6 +582,27 @@ export default function PatientDetail() {
                           </div>
                         </div>
                       )}
+                      {/* Warn when mandatory tasks were never logged — does not block closure */}
+                      {treatment?.hasActivity !== false && (treatment?.missingMandatoryCategories?.length ?? 0) > 0 && (
+                        <div
+                          data-testid="missing-mandatory-warning"
+                          className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 dark:border-rose-800/50 dark:bg-rose-950/20 p-4"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-sm font-bold text-rose-800 dark:text-rose-300">Tarefas obrigatórias nunca registradas</p>
+                            <p className="text-xs text-rose-700/80 dark:text-rose-400/70 mt-0.5">
+                              As seguintes categorias obrigatórias não têm nenhum registro neste tratamento:{" "}
+                              <strong>
+                                {treatment!.missingMandatoryCategories!
+                                  .map((c) => TASK_TYPE_LABELS[c] ?? c)
+                                  .join(", ")}
+                              </strong>
+                              . O encerramento ainda é permitido, mas estes dados clínicos serão perdidos.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className="rounded-xl border border-border p-4 space-y-1.5">
                         <p className="text-sm font-bold text-foreground flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Concluído
@@ -607,14 +628,14 @@ export default function PatientDetail() {
                       <Button
                         variant="outline"
                         onClick={handleCancelTreatment}
-                        disabled={completeTreatment.isPending || cancelTreatment.isPending || treatment?.hasActivity === false}
+                        disabled={completeTreatment.isPending || cancelTreatment.isPending || treatment?.hasActivity === false || (treatment?.missingMandatoryCategories?.length ?? 0) > 0}
                         className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold"
                       >
                         {cancelTreatment.isPending ? "Cancelando..." : "Cancelar tratamento"}
                       </Button>
                       <Button
                         onClick={handleCompleteTreatment}
-                        disabled={completeTreatment.isPending || cancelTreatment.isPending || treatment?.hasActivity === false}
+                        disabled={completeTreatment.isPending || cancelTreatment.isPending || treatment?.hasActivity === false || (treatment?.missingMandatoryCategories?.length ?? 0) > 0}
                         className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 border-0 font-bold"
                       >
                         {completeTreatment.isPending ? "Encerrando..." : "Marcar como concluído"}

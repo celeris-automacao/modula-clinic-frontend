@@ -259,9 +259,21 @@ export interface TreatmentCreated {
   durationWeeks: number;
 }
 
+export interface TreatmentCloseBlockedError {
+  error: string;
+  /** Number of mandatory task IDs that were never logged (not deduplicated by category) */
+  missingMandatoryTasks?: number;
+  /** Deduplicated categories of mandatory tasks that were never logged */
+  missingMandatoryCategories?: string[];
+}
+
 export interface TreatmentStatusResult {
   id: number;
   status: string;
+  /** Number of mandatory tasks that were never logged for this treatment (audit field) */
+  missingMandatoryTasks?: number;
+  /** Categories of mandatory tasks that were never logged (e.g. ['weight','medication']) */
+  missingMandatoryCategories?: string[];
 }
 
 export interface TreatmentDetail {
@@ -274,6 +286,8 @@ export interface TreatmentDetail {
   durationWeeks: number;
   /** True when at least one task log exists for this treatment (BR-050) */
   hasActivity: boolean;
+  /** Categories of mandatory tasks that have never been logged for this treatment */
+  missingMandatoryCategories?: string[];
   tasks: ProtocolTask[];
 }
 

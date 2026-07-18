@@ -50,6 +50,7 @@ import type {
   TaskLogInput,
   TaskLogResult,
   TodayTask,
+  TreatmentCloseBlockedError,
   TreatmentCreated,
   TreatmentDetail,
   TreatmentHistoryItem,
@@ -1753,7 +1754,7 @@ export const completeTreatment = async (id: number, options?: RequestInit): Prom
 
 
 
-export const getCompleteTreatmentMutationOptions = <TError = ErrorType<ApiMessage>,
+export const getCompleteTreatmentMutationOptions = <TError = ErrorType<ApiMessage | TreatmentCloseBlockedError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeTreatment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof completeTreatment>>, TError,{id: number}, TContext> => {
 
@@ -1782,12 +1783,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CompleteTreatmentMutationResult = NonNullable<Awaited<ReturnType<typeof completeTreatment>>>
 
-    export type CompleteTreatmentMutationError = ErrorType<ApiMessage>
+    export type CompleteTreatmentMutationError = ErrorType<ApiMessage | TreatmentCloseBlockedError>
 
     /**
  * @summary Mark an active treatment as completed (Active → Completed, BR-021)
  */
-export const useCompleteTreatment = <TError = ErrorType<ApiMessage>,
+export const useCompleteTreatment = <TError = ErrorType<ApiMessage | TreatmentCloseBlockedError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeTreatment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof completeTreatment>>,
@@ -1824,7 +1825,7 @@ export const cancelTreatment = async (id: number, options?: RequestInit): Promis
 
 
 
-export const getCancelTreatmentMutationOptions = <TError = ErrorType<ApiMessage>,
+export const getCancelTreatmentMutationOptions = <TError = ErrorType<ApiMessage | TreatmentCloseBlockedError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelTreatment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof cancelTreatment>>, TError,{id: number}, TContext> => {
 
@@ -1853,12 +1854,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CancelTreatmentMutationResult = NonNullable<Awaited<ReturnType<typeof cancelTreatment>>>
 
-    export type CancelTreatmentMutationError = ErrorType<ApiMessage>
+    export type CancelTreatmentMutationError = ErrorType<ApiMessage | TreatmentCloseBlockedError>
 
     /**
  * @summary Cancel an active treatment (Active → Cancelled, BR-021)
  */
-export const useCancelTreatment = <TError = ErrorType<ApiMessage>,
+export const useCancelTreatment = <TError = ErrorType<ApiMessage | TreatmentCloseBlockedError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelTreatment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof cancelTreatment>>,
