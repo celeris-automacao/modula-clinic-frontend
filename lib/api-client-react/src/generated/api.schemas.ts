@@ -86,6 +86,8 @@ export interface Patient {
   /** @nullable */
   currentWeightKg?: number | null;
   /** @nullable */
+  goalWeightKg?: number | null;
+  /** @nullable */
   nextAppointment?: string | null;
   /**
      * Replit user ID linked to this patient, if any
@@ -100,7 +102,7 @@ export interface Patient {
   /** @nullable */
   protocolName?: string | null;
   /**
-     * Latest AI insight summary, if any
+     * BR-081: insight resumido para o card do dashboard
      * @nullable
      */
   insightSummary?: string | null;
@@ -116,6 +118,7 @@ export interface PatientInput {
   age?: number;
   startWeightKg?: number;
   currentWeightKg?: number;
+  goalWeightKg?: number;
   nextAppointment?: string;
 }
 
@@ -238,9 +241,15 @@ export interface TreatmentDetail {
   patientId: number;
   protocolId: number;
   protocolName: string;
+  status: string;
   startedAt: string;
   durationWeeks: number;
   tasks: ProtocolTask[];
+}
+
+export interface TreatmentPublishResult {
+  id: number;
+  status: string;
 }
 
 export type TodayTaskCategory = typeof TodayTaskCategory[keyof typeof TodayTaskCategory];
@@ -401,6 +410,17 @@ export interface DashboardSummary {
   lowRisk: number;
   avgAdherence: number;
   logsToday: number;
+}
+
+export interface AlertItem {
+  id: number;
+  patientId: number;
+  patientName: string;
+  message: string;
+  riskLevel: string;
+  /** @nullable */
+  readAt?: string | null;
+  createdAt: string;
 }
 
 /**
