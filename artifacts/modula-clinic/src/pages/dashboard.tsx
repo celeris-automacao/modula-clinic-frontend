@@ -28,7 +28,7 @@ export default function Dashboard() {
     query: { enabled, queryKey: getGetDashboardSummaryQueryKey() },
   });
   const { data: patients, isLoading: loadingPatients } = useListPatients({
-    query: { enabled, queryKey: getListPatientsQueryKey() },
+    query: { enabled, queryKey: getListPatientsQueryKey(), refetchInterval: 30_000 },
   });
   const { data: alerts } = useListAlerts({
     query: { enabled, queryKey: getListAlertsQueryKey(), refetchInterval: 30_000 },
