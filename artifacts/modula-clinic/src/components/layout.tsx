@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Activity, LayoutDashboard, Stethoscope, User, Moon, Sun, LogIn, LogOut } from "lucide-react";
+import { Activity, LayoutDashboard, Settings, Stethoscope, User, Moon, Sun, LogIn, LogOut } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -72,6 +72,7 @@ export function Layout({ children }: LayoutProps) {
             <>
               <NavItem href="/" icon={LayoutDashboard} label="Dashboard" active={location === "/"} />
               <NavItem href="/protocolos" icon={Stethoscope} label="Protocolos" active={location.startsWith("/protocolos")} />
+              <NavItem href="/configuracoes" icon={Settings} label="Configurações" active={location.startsWith("/configuracoes")} />
             </>
           ) : (
             <>

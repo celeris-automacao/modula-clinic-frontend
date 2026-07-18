@@ -424,6 +424,25 @@ export interface AlertCheckResult {
   alertsCreated: number;
 }
 
+export interface ProfessionalProfile {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+  /** @nullable */
+  notificationEmail: string | null;
+}
+
+export interface ProfessionalProfileUpdate {
+  /** @minLength 1 */
+  notificationEmail?: string;
+}
+
 export interface DashboardSummary {
   totalPatients: number;
   highRisk: number;

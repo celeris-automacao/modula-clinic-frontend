@@ -6,6 +6,7 @@ import Dashboard from '@/pages/dashboard';
 import PatientDetail from '@/pages/patient-detail';
 import Protocols from '@/pages/protocols';
 import Journey from '@/pages/journey';
+import Settings from '@/pages/settings';
 import { Layout } from '@/components/layout';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/pacientes/:id" component={PatientDetail} />
         <Route path="/protocolos" component={Protocols} />
         <Route path="/jornada" component={Journey} />
+        <Route path="/configuracoes" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
