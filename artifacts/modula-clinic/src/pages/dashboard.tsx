@@ -12,7 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { RiskBadge, TrendIcon, RadarScore } from "@/components/adherence-ui";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
-import { AlertCircle, ArrowRight, Activity, Users, FileText, BellRing, Check, Send, LogIn, ShieldAlert } from "lucide-react";
+import { AlertCircle, ArrowRight, Activity, Users, FileText, BellRing, Check, Send, LogIn, ShieldAlert, BellOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -47,6 +47,7 @@ export default function Dashboard() {
   };
   const sendReminder = useNotifyPatient();
   const [reminderSentLocal, setReminderSentLocal] = useState<Record<number, boolean>>({});
+  const [noPushToken, setNoPushToken] = useState<Record<number, boolean>>({});
   const [, setLocation] = useLocation();
 
   /** True if the patient already received a reminder today (server-side or this session) */
@@ -56,8 +57,12 @@ export default function Dashboard() {
     return patient.lastReminderAt.slice(0, 10) === new Date().toISOString().slice(0, 10);
   }
 
-  function handleSendReminder(e: React.MouseEvent, patientId: number) {
+  function handleSendReminder(e: React.MouseEvent, patientId: number, hasPushToken: boolean) {
     e.stopPropagation();
+    if (!hasPushToken) {
+      setNoPushToken((prev) => ({ ...prev, [patientId]: true }));
+      return;
+    }
     sendReminder.mutate({ id: patientId }, {
       onSuccess: (data) => {
         if (data.sent) {
@@ -296,20 +301,44 @@ export default function Dashboard() {
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap text-right rounded-r-xl border-y border-r border-border group-hover:border-sky-200/60 transition-colors">
                       <div className="flex items-center justify-end gap-2">
-                        {patient.riskLevel === "high" && (
-                          <button
-                            title={reminderAlreadySentToday(patient) ? "Lembrete já enviado hoje" : "Enviar lembrete ao paciente"}
-                            disabled={sendReminder.isPending || reminderAlreadySentToday(patient)}
-                            onClick={(e) => handleSendReminder(e, patient.id)}
-                            className={cn(
-                              "inline-flex items-center justify-center w-9 h-9 rounded-xl transition-all",
-                              reminderAlreadySentToday(patient)
-                                ? "bg-emerald-100 text-emerald-600 cursor-default opacity-60"
-                                : "bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white hover:shadow-[0_4px_14px_0_rgba(244,63,94,0.35)]",
-                            )}
+                        {/* No-push-token indicator: visible for all patients without a registered token */}
+                        {!patient.hasPushToken && (
+                          <span
+                            title="Paciente ainda não ativou as notificações no app"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground/40"
                           >
-                            {reminderAlreadySentToday(patient) ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                          </button>
+                            <BellOff className="w-4 h-4" />
+                          </span>
+                        )}
+                        {patient.riskLevel === "high" && (
+                          <div className="flex flex-col items-end gap-1">
+                            <button
+                              title={
+                                reminderAlreadySentToday(patient)
+                                  ? "Lembrete já enviado hoje"
+                                  : !patient.hasPushToken
+                                    ? "Paciente sem notificações ativas"
+                                    : "Enviar lembrete ao paciente"
+                              }
+                              disabled={sendReminder.isPending || reminderAlreadySentToday(patient)}
+                              onClick={(e) => handleSendReminder(e, patient.id, patient.hasPushToken)}
+                              className={cn(
+                                "inline-flex items-center justify-center w-9 h-9 rounded-xl transition-all",
+                                reminderAlreadySentToday(patient)
+                                  ? "bg-emerald-100 text-emerald-600 cursor-default opacity-60"
+                                  : !patient.hasPushToken
+                                    ? "bg-muted text-muted-foreground/50 cursor-pointer hover:bg-amber-50 hover:text-amber-500"
+                                    : "bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white hover:shadow-[0_4px_14px_0_rgba(244,63,94,0.35)]",
+                              )}
+                            >
+                              {reminderAlreadySentToday(patient) ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                            </button>
+                            {noPushToken[patient.id] && (
+                              <span className="text-[10px] text-amber-600 font-medium whitespace-nowrap max-w-[140px] text-right leading-tight">
+                                Este paciente ainda não ativou as notificações no app
+                              </span>
+                            )}
+                          </div>
                         )}
                         <button className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-muted text-muted-foreground group-hover:bg-sky-500 group-hover:text-white group-hover:shadow-[0_4px_14px_0_rgba(14,165,233,0.35)] transition-all">
                           <ArrowRight className="w-4 h-4" />
