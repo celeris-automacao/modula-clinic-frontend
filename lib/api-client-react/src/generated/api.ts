@@ -28,6 +28,7 @@ import type {
   BeginBrowserLoginParams,
   DashboardSummary,
   ErrorEnvelope,
+  GetPatientNumericLogsParams,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   Insight,
@@ -971,6 +972,95 @@ export function useGetPatientMeasurements<TData = Awaited<ReturnType<typeof getP
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPatientMeasurementsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPatientNumericLogsUrl = (id: number,
+    params: GetPatientNumericLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/patients/${id}/numeric-logs?${stringifiedParams}` : `/api/patients/${id}/numeric-logs`
+}
+
+/**
+ * @summary Numeric log history for a given category (sleep, mood) for the past 30 days
+ */
+export const getPatientNumericLogs = async (id: number,
+    params: GetPatientNumericLogsParams, options?: RequestInit): Promise<MeasurementPoint[]> => {
+
+  return customFetch<MeasurementPoint[]>(getGetPatientNumericLogsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPatientNumericLogsQueryKey = (id: number,
+    params?: GetPatientNumericLogsParams,) => {
+    return [
+    `/api/patients/${id}/numeric-logs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPatientNumericLogsQueryOptions = <TData = Awaited<ReturnType<typeof getPatientNumericLogs>>, TError = ErrorType<ApiMessage>>(id: number,
+    params: GetPatientNumericLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPatientNumericLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPatientNumericLogsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPatientNumericLogs>>> = ({ signal }) => getPatientNumericLogs(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPatientNumericLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPatientNumericLogsQueryResult = NonNullable<Awaited<ReturnType<typeof getPatientNumericLogs>>>
+export type GetPatientNumericLogsQueryError = ErrorType<ApiMessage>
+
+
+/**
+ * @summary Numeric log history for a given category (sleep, mood) for the past 30 days
+ */
+
+export function useGetPatientNumericLogs<TData = Awaited<ReturnType<typeof getPatientNumericLogs>>, TError = ErrorType<ApiMessage>>(
+ id: number,
+    params: GetPatientNumericLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPatientNumericLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPatientNumericLogsQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -308,6 +308,11 @@ export interface TodayTask {
   /** @nullable */
   note?: string | null;
   /**
+     * Logged numeric value (sleep hours, mood scale, etc.)
+     * @nullable
+     */
+  valueNumber?: number | null;
+  /**
      * Base64 data URL of the logged photo (photo-category tasks only)
      * @nullable
      */
@@ -467,6 +472,18 @@ export interface AlertItem {
  * Opaque session token — `Bearer <sid>`.
  */
 export type AuthorizationSessionHeaderParameter = string;
+
+export type GetPatientNumericLogsParams = {
+category: GetPatientNumericLogsCategory;
+};
+
+export type GetPatientNumericLogsCategory = typeof GetPatientNumericLogsCategory[keyof typeof GetPatientNumericLogsCategory];
+
+
+export const GetPatientNumericLogsCategory = {
+  sleep: 'sleep',
+  mood: 'mood',
+} as const;
 
 export type BeginBrowserLoginParams = {
 returnTo?: string;

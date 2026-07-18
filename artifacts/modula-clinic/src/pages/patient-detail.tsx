@@ -65,6 +65,17 @@ const TASK_TYPE_LABELS: Record<string, string> = Object.fromEntries(
   TASK_TYPES.map((t) => [t.value, t.label])
 );
 
+// Human-readable mood label for 1–10 scale
+function formatMoodLabel(value: number): string {
+  const rounded = Math.round(value);
+  const emoji =
+    rounded <= 2 ? "😞" :
+    rounded <= 4 ? "😐" :
+    rounded <= 6 ? "🙂" :
+    rounded <= 8 ? "😊" : "😄";
+  return `${emoji} Humor: ${rounded}/10`;
+}
+
 export default function PatientDetail() {
   const [, params] = useRoute("/pacientes/:id");
   const id = params?.id ? parseInt(params.id) : 0;
@@ -336,6 +347,23 @@ export default function PatientDetail() {
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">Obrigatória</Badge>
                           )}
                         </div>
+                        {/* Numeric value — human-readable for sleep and mood */}
+                        {task.valueNumber != null && task.category === "sleep" && (
+                          <p className="text-xs font-medium text-sky-600 dark:text-sky-400 mt-1">
+                            🌙 {task.valueNumber}h de sono
+                          </p>
+                        )}
+                        {task.valueNumber != null && task.category === "mood" && (
+                          <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mt-1">
+                            {formatMoodLabel(task.valueNumber)}
+                          </p>
+                        )}
+                        {/* Generic numeric value for other types (weight, water, etc.) */}
+                        {task.valueNumber != null && task.category !== "sleep" && task.category !== "mood" && task.category !== "photo" && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Valor: {task.valueNumber}
+                          </p>
+                        )}
                         {/* Text note */}
                         {task.note && (
                           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{task.note}</p>
