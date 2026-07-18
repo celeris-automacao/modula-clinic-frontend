@@ -35,6 +35,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useCompleteTreatment: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useCancelTreatment: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useLinkPatientAccount: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useGetPatientTreatments: vi.fn(() => ({ data: [], isLoading: false })),
   getGetPatientQueryKey: (id: number) => ['patient', id],
   getGetPatientAdherenceQueryKey: (id: number) => ['adherence', id],
   getGetPatientProgressQueryKey: (id: number) => ['progress', id],
@@ -42,6 +43,7 @@ vi.mock('@workspace/api-client-react', () => ({
   getGetLatestInsightQueryKey: (id: number) => ['insight', id],
   getGetDashboardSummaryQueryKey: () => ['dashboardSummary'],
   getListPatientsQueryKey: () => ['patients'],
+  getGetPatientTreatmentsQueryKey: (id: number) => ['treatments', id],
 }));
 
 vi.mock('wouter', () => ({

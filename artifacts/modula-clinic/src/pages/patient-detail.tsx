@@ -20,6 +20,11 @@ import {
   getGetDashboardSummaryQueryKey,
   getListPatientsQueryKey
 } from "@workspace/api-client-react";
+import {
+  useGetPatientTreatments,
+  getGetPatientTreatmentsQueryKey,
+  type TreatmentHistoryItem,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -27,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { RadarScore, RiskBadge, TrendIcon } from "@/components/adherence-ui";
-import { AlertCircle, AlertTriangle, BrainCircuit, CheckCircle2, ChevronLeft, Flame, Sparkles, Stethoscope, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, BrainCircuit, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Flame, History, Sparkles, Stethoscope, XCircle } from "lucide-react";
 import { Link } from "wouter";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -74,10 +79,15 @@ export default function PatientDetail() {
     }
   });
 
+  const { data: treatmentHistory } = useGetPatientTreatments(id, {
+    query: { enabled: !!id, queryKey: getGetPatientTreatmentsQueryKey(id) },
+  });
+
   const generateInsight = useGenerateInsight();
   const completeTreatment = useCompleteTreatment();
   const cancelTreatment = useCancelTreatment();
   const [closeTreatmentOpen, setCloseTreatmentOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -86,6 +96,7 @@ export default function PatientDetail() {
     queryClient.invalidateQueries({ queryKey: getGetActiveTreatmentQueryKey(id) });
     queryClient.invalidateQueries({ queryKey: getListPatientsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetPatientTreatmentsQueryKey(id) });
   };
 
   const handleCompleteTreatment = () => {
@@ -474,6 +485,68 @@ export default function PatientDetail() {
             <LinkAccountCard patientId={id} linkedUserId={patient.userId ?? null} />
 
           </div>
+        </div>
+      )}
+
+      {/* Histórico de tratamentos — read-only, collapsible */}
+      {treatmentHistory && treatmentHistory.filter(t => t.status !== 'active').length > 0 && (
+        <div className="bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-card-border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(o => !o)}
+            className="w-full p-5 flex items-center justify-between hover:bg-muted/40 transition-colors"
+          >
+            <span className="text-base font-extrabold text-foreground flex items-center gap-2">
+              <History className="w-4.5 h-4.5 text-muted-foreground" />
+              Histórico de tratamentos
+              <Badge variant="secondary" className="ml-1 font-semibold">
+                {treatmentHistory.filter(t => t.status !== 'active').length}
+              </Badge>
+            </span>
+            {historyOpen
+              ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              : <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            }
+          </button>
+
+          {historyOpen && (
+            <div className="border-t border-border divide-y divide-border">
+              {treatmentHistory
+                .filter(t => t.status !== 'active')
+                .map(t => (
+                  <div key={t.id} className="p-5 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-foreground truncate">{t.protocolName}</span>
+                        {t.status === 'completed'
+                          ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-[11px]">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />Concluído
+                            </Badge>
+                          : <Badge className="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-0 text-[11px]">
+                              <XCircle className="w-3 h-3 mr-1" />Cancelado
+                            </Badge>
+                        }
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Iniciado em {format(parseISO(t.startedAt), "dd/MM/yyyy", { locale: ptBR })}
+                        {' · '}{t.durationWeeks} semana{t.durationWeeks !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className={cn(
+                        "text-xl font-extrabold",
+                        t.finalAdherenceScore >= 70 ? "text-emerald-600 dark:text-emerald-400" :
+                        t.finalAdherenceScore >= 40 ? "text-amber-600 dark:text-amber-400" :
+                        "text-rose-600 dark:text-rose-400"
+                      )}>
+                        {t.finalAdherenceScore}%
+                      </span>
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Adesão</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       )}
     </div>

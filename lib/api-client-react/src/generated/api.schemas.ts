@@ -442,3 +442,23 @@ export type LogoutBrowserSessionParams = {
 returnTo?: string;
 };
 
+export type TreatmentHistoryStatus = typeof TreatmentHistoryStatus[keyof typeof TreatmentHistoryStatus];
+
+export const TreatmentHistoryStatus = {
+  active: 'active',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface TreatmentHistoryItem {
+  id: number;
+  patientId: number;
+  protocolId: number;
+  protocolName: string;
+  status: TreatmentHistoryStatus;
+  startedAt: string;
+  durationWeeks: number;
+  /** 0-100, computed from task logs over the treatment duration */
+  finalAdherenceScore: number;
+}
+
