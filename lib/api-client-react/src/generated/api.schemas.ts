@@ -221,6 +221,27 @@ export interface TreatmentInput {
   extraTasks?: ProtocolTaskInput[];
 }
 
+export type TreatmentHistoryItemStatus = typeof TreatmentHistoryItemStatus[keyof typeof TreatmentHistoryItemStatus];
+
+
+export const TreatmentHistoryItemStatus = {
+  active: 'active',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface TreatmentHistoryItem {
+  id: number;
+  patientId: number;
+  protocolId: number;
+  protocolName: string;
+  status: TreatmentHistoryItemStatus;
+  startedAt: string;
+  durationWeeks: number;
+  /** 0-100, computed from task logs over the treatment duration */
+  finalAdherenceScore: number;
+}
+
 export interface TreatmentCreated {
   id: number;
   patientId: number;
@@ -441,24 +462,4 @@ iss?: string;
 export type LogoutBrowserSessionParams = {
 returnTo?: string;
 };
-
-export type TreatmentHistoryStatus = typeof TreatmentHistoryStatus[keyof typeof TreatmentHistoryStatus];
-
-export const TreatmentHistoryStatus = {
-  active: 'active',
-  completed: 'completed',
-  cancelled: 'cancelled',
-} as const;
-
-export interface TreatmentHistoryItem {
-  id: number;
-  patientId: number;
-  protocolId: number;
-  protocolName: string;
-  status: TreatmentHistoryStatus;
-  startedAt: string;
-  durationWeeks: number;
-  /** 0-100, computed from task logs over the treatment duration */
-  finalAdherenceScore: number;
-}
 
