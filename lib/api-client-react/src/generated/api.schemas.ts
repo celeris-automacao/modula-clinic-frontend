@@ -439,8 +439,8 @@ export interface ProfessionalProfile {
 }
 
 export interface ProfessionalProfileUpdate {
-  /** @minLength 1 */
-  notificationEmail?: string;
+  /** @nullable */
+  notificationEmail?: string | null;
 }
 
 export interface DashboardSummary {

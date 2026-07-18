@@ -4,9 +4,15 @@
  * Renders the PatientDetail page and verifies no React warnings are emitted.
  * The global setup (src/test/setup.ts) turns any matching console.error /
  * console.warn into a hard test failure.
+ *
+ * Photo-thumbnail tests (BR-photo):
+ *   - photo task with photoDataUrl → thumbnail button + img
+ *   - clicking thumbnail → enlarged dialog opens
+ *   - photo task without photoDataUrl → Camera placeholder icon
+ *   - non-photo task with note → note text, no photo element
  */
-import { render, screen } from '@testing-library/react';
-import { describe, it, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as apiClient from '@workspace/api-client-react';
 import PatientDetail from './patient-detail';
@@ -120,5 +126,140 @@ describe('PatientDetail page', () => {
 
     render(<PatientDetail />, { wrapper: makeWrapper() });
     screen.getByText('Radar de Adesão');
+  });
+});
+
+// ─── Photo thumbnail tests (BR-photo) ─────────────────────────────────────
+
+/** Sets up a patient with hasActiveTreatment:true and a given todayTasks list. */
+function renderWithTasks(tasks: unknown[]) {
+  vi.mocked(apiClient.useGetPatient).mockReturnValue({
+    isLoading: false,
+    data: {
+      id: 1,
+      name: 'Maria Souza',
+      goal: 'Emagrecimento',
+      age: 35,
+      hasActiveTreatment: true,
+    },
+  } as any);
+
+  vi.mocked(apiClient.useGetPatientAdherence).mockReturnValue({
+    isLoading: false,
+    data: {
+      score: 72,
+      trend: 'stable',
+      riskLevel: 'none',
+      currentStreakDays: 3,
+      missedLast3Days: 1,
+      weeklyCompletionPct: 72,
+      computedAt: new Date().toISOString(),
+      categoryBreakdown: [],
+    },
+  } as any);
+
+  vi.mocked(apiClient.useGetTodayTasks).mockReturnValue({
+    data: tasks,
+  } as any);
+
+  return render(<PatientDetail />, { wrapper: makeWrapper() });
+}
+
+describe('PatientDetail — photo thumbnails (BR-photo)', () => {
+  it('renders a thumbnail button with an img when a photo task has photoDataUrl', () => {
+    renderWithTasks([
+      {
+        taskId: 10,
+        title: 'Foto corporal',
+        category: 'photo',
+        mandatory: false,
+        completedToday: true,
+        photoDataUrl: 'data:image/png;base64,abc123',
+        note: null,
+      },
+    ]);
+
+    // The thumbnail button must be present
+    const btn = screen.getByRole('button', { name: /ver foto ampliada/i });
+    expect(btn).toBeInTheDocument();
+
+    // The thumbnail img must be present and have the correct src
+    const img = screen.getByAltText('Foto registrada pelo paciente');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,abc123');
+  });
+
+  it('opens the enlarged dialog when the thumbnail button is clicked', () => {
+    renderWithTasks([
+      {
+        taskId: 11,
+        title: 'Foto corporal',
+        category: 'photo',
+        mandatory: false,
+        completedToday: true,
+        photoDataUrl: 'data:image/jpeg;base64,xyz789',
+        note: null,
+      },
+    ]);
+
+    const btn = screen.getByRole('button', { name: /ver foto ampliada/i });
+    fireEvent.click(btn);
+
+    // After clicking, the dialog should open and show the full-size image.
+    // The dialog renders an <img> with the same src (and there may be two in
+    // the DOM — thumbnail + enlarged — so we find the one inside the dialog
+    // by its alt text and verify the src is correct).
+    const images = screen.getAllByAltText('Foto registrada pelo paciente');
+    const enlargedImg = images.find((el) =>
+      el.classList.contains('rounded-xl') &&
+      el.classList.contains('object-contain'),
+    );
+    expect(enlargedImg).toBeInTheDocument();
+    expect(enlargedImg).toHaveAttribute('src', 'data:image/jpeg;base64,xyz789');
+  });
+
+  it('renders the Camera placeholder for a photo task with no photoDataUrl', () => {
+    renderWithTasks([
+      {
+        taskId: 12,
+        title: 'Foto semanal',
+        category: 'photo',
+        mandatory: false,
+        completedToday: false,
+        photoDataUrl: null,
+        note: null,
+      },
+    ]);
+
+    // No thumbnail button
+    expect(screen.queryByRole('button', { name: /ver foto ampliada/i })).toBeNull();
+
+    // Camera placeholder container exists (aria-hidden SVG, detect by task title)
+    screen.getByText('Foto semanal');
+
+    // The placeholder renders a Camera icon — check its wrapper div exists
+    // by confirming neither a thumbnail img nor an enlarged dialog img is in the DOM
+    expect(screen.queryByAltText('Foto registrada pelo paciente')).toBeNull();
+  });
+
+  it('renders note text for a non-photo task and no photo element', () => {
+    renderWithTasks([
+      {
+        taskId: 20,
+        title: 'Beber água',
+        category: 'water',
+        mandatory: true,
+        completedToday: true,
+        photoDataUrl: null,
+        note: 'Bebi 2 litros hoje',
+      },
+    ]);
+
+    // Note is visible
+    screen.getByText('Bebi 2 litros hoje');
+
+    // No photo thumbnail button or img
+    expect(screen.queryByRole('button', { name: /ver foto ampliada/i })).toBeNull();
+    expect(screen.queryByAltText('Foto registrada pelo paciente')).toBeNull();
   });
 });

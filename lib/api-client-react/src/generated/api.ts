@@ -49,7 +49,9 @@ import type {
   TodayTask,
   TreatmentCreated,
   TreatmentDetail,
+  TreatmentHistoryItem,
   TreatmentInput,
+  TreatmentPublishResult,
   TreatmentStatusResult
 } from './api.schemas';
 
@@ -673,6 +675,83 @@ export function useGetPatientProgress<TData = Awaited<ReturnType<typeof getPatie
 
 
 
+export const getGetPatientTreatmentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/patients/${id}/treatments`
+}
+
+/**
+ * @summary All non-draft treatments for a patient (history view for professionals)
+ */
+export const getPatientTreatments = async (id: number, options?: RequestInit): Promise<TreatmentHistoryItem[]> => {
+
+  return customFetch<TreatmentHistoryItem[]>(getGetPatientTreatmentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPatientTreatmentsQueryKey = (id: number,) => {
+    return [
+    `/api/patients/${id}/treatments`
+    ] as const;
+    }
+
+
+export const getGetPatientTreatmentsQueryOptions = <TData = Awaited<ReturnType<typeof getPatientTreatments>>, TError = ErrorType<ApiMessage>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPatientTreatments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPatientTreatmentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPatientTreatments>>> = ({ signal }) => getPatientTreatments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPatientTreatments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPatientTreatmentsQueryResult = NonNullable<Awaited<ReturnType<typeof getPatientTreatments>>>
+export type GetPatientTreatmentsQueryError = ErrorType<ApiMessage>
+
+
+/**
+ * @summary All non-draft treatments for a patient (history view for professionals)
+ */
+
+export function useGetPatientTreatments<TData = Awaited<ReturnType<typeof getPatientTreatments>>, TError = ErrorType<ApiMessage>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPatientTreatments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPatientTreatmentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetActiveTreatmentUrl = (id: number,) => {
 
 
@@ -682,7 +761,7 @@ export const getGetActiveTreatmentUrl = (id: number,) => {
 }
 
 /**
- * @summary Active treatment with its tasks
+ * @summary Active treatment with its tasks (BR-022: only active treatments)
  */
 export const getActiveTreatment = async (id: number, options?: RequestInit): Promise<TreatmentDetail> => {
 
@@ -729,7 +808,7 @@ export type GetActiveTreatmentQueryError = ErrorType<ApiMessage>
 
 
 /**
- * @summary Active treatment with its tasks
+ * @summary Active treatment with its tasks (BR-022: only active treatments)
  */
 
 export function useGetActiveTreatment<TData = Awaited<ReturnType<typeof getActiveTreatment>>, TError = ErrorType<ApiMessage>>(
@@ -913,7 +992,7 @@ export const getGetLatestInsightUrl = (id: number,) => {
 }
 
 /**
- * @summary Latest AI insight for the patient
+ * @summary Latest AI insight for the patient (BR-072)
  */
 export const getLatestInsight = async (id: number, options?: RequestInit): Promise<Insight> => {
 
@@ -960,7 +1039,7 @@ export type GetLatestInsightQueryError = ErrorType<ApiMessage>
 
 
 /**
- * @summary Latest AI insight for the patient
+ * @summary Latest AI insight for the patient (BR-072)
  */
 
 export function useGetLatestInsight<TData = Awaited<ReturnType<typeof getLatestInsight>>, TError = ErrorType<ApiMessage>>(
@@ -990,7 +1069,7 @@ export const getGenerateInsightUrl = (id: number,) => {
 }
 
 /**
- * @summary Generate a fresh AI insight from the Adherence Engine output
+ * @summary Generate a fresh AI insight from the Adherence Engine output (BR-070–BR-073, BR-093)
  */
 export const generateInsight = async (id: number, options?: RequestInit): Promise<Insight> => {
 
@@ -1039,7 +1118,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type GenerateInsightMutationError = ErrorType<ApiMessage>
 
     /**
- * @summary Generate a fresh AI insight from the Adherence Engine output
+ * @summary Generate a fresh AI insight from the Adherence Engine output (BR-070–BR-073, BR-093)
  */
 export const useGenerateInsight = <TError = ErrorType<ApiMessage>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateInsight>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1280,7 +1359,7 @@ export const getCreateTreatmentUrl = () => {
 }
 
 /**
- * @summary Apply a protocol to a patient (generates the patient's tasks)
+ * @summary Apply a protocol to a patient — creates treatment in Draft state (BR-021)
  */
 export const createTreatment = async (treatmentInput: TreatmentInput, options?: RequestInit): Promise<TreatmentCreated> => {
 
@@ -1329,7 +1408,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateTreatmentMutationError = ErrorType<ApiMessage>
 
     /**
- * @summary Apply a protocol to a patient (generates the patient's tasks)
+ * @summary Apply a protocol to a patient — creates treatment in Draft state (BR-021)
  */
 export const useCreateTreatment = <TError = ErrorType<ApiMessage>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTreatment>>, TError,{data: BodyType<TreatmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1353,9 +1432,9 @@ export const getPublishTreatmentUrl = (id: number,) => {
 /**
  * @summary Publish a treatment — Draft → Active, validates at least one task (BR-003, BR-090)
  */
-export const publishTreatment = async (id: number, options?: RequestInit): Promise<TreatmentStatusResult> => {
+export const publishTreatment = async (id: number, options?: RequestInit): Promise<TreatmentPublishResult> => {
 
-  return customFetch<TreatmentStatusResult>(getPublishTreatmentUrl(id),
+  return customFetch<TreatmentPublishResult>(getPublishTreatmentUrl(id),
   {
     ...options,
     method: 'POST'
@@ -1564,7 +1643,7 @@ export const getCreateTaskLogUrl = () => {
 }
 
 /**
- * @summary Patient registers an activity (recomputes adherence)
+ * @summary Patient registers an activity (recomputes adherence) — BR-035 rejects duplicates
  */
 export const createTaskLog = async (taskLogInput: TaskLogInput, options?: RequestInit): Promise<TaskLogResult> => {
 
@@ -1613,7 +1692,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateTaskLogMutationError = ErrorType<ApiMessage>
 
     /**
- * @summary Patient registers an activity (recomputes adherence)
+ * @summary Patient registers an activity (recomputes adherence) — BR-035 rejects duplicates
  */
 export const useCreateTaskLog = <TError = ErrorType<ApiMessage>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTaskLog>>, TError,{data: BodyType<TaskLogInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -2254,7 +2333,7 @@ export const getListAlertsUrl = () => {
 }
 
 /**
- * @summary High-risk alert records
+ * @summary List all high-risk alerts (professionals only)
  */
 export const listAlerts = async ( options?: RequestInit): Promise<Alert[]> => {
 
@@ -2278,7 +2357,7 @@ export const getListAlertsQueryKey = () => {
     }
 
 
-export const getListAlertsQueryOptions = <TData = Awaited<ReturnType<typeof listAlerts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListAlertsQueryOptions = <TData = Awaited<ReturnType<typeof listAlerts>>, TError = ErrorType<ApiMessage>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2297,14 +2376,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListAlertsQueryResult = NonNullable<Awaited<ReturnType<typeof listAlerts>>>
-export type ListAlertsQueryError = ErrorType<unknown>
+export type ListAlertsQueryError = ErrorType<ApiMessage>
 
 
 /**
- * @summary High-risk alert records
+ * @summary List all high-risk alerts (professionals only)
  */
 
-export function useListAlerts<TData = Awaited<ReturnType<typeof listAlerts>>, TError = ErrorType<unknown>>(
+export function useListAlerts<TData = Awaited<ReturnType<typeof listAlerts>>, TError = ErrorType<ApiMessage>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -2331,7 +2410,7 @@ export const getCheckAlertsUrl = () => {
 }
 
 /**
- * @summary Recompute adherence and create high-risk alerts for at-risk patients
+ * @summary Scan all patients and create high-risk alerts (professionals only)
  */
 export const checkAlerts = async ( options?: RequestInit): Promise<AlertCheckResult> => {
 
@@ -2348,7 +2427,7 @@ export const checkAlerts = async ( options?: RequestInit): Promise<AlertCheckRes
 
 
 
-export const getCheckAlertsMutationOptions = <TError = ErrorType<unknown>,
+export const getCheckAlertsMutationOptions = <TError = ErrorType<ApiMessage>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkAlerts>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof checkAlerts>>, TError,void, TContext> => {
 
@@ -2377,12 +2456,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CheckAlertsMutationResult = NonNullable<Awaited<ReturnType<typeof checkAlerts>>>
 
-    export type CheckAlertsMutationError = ErrorType<unknown>
+    export type CheckAlertsMutationError = ErrorType<ApiMessage>
 
     /**
- * @summary Recompute adherence and create high-risk alerts for at-risk patients
+ * @summary Scan all patients and create high-risk alerts (professionals only)
  */
-export const useCheckAlerts = <TError = ErrorType<unknown>,
+export const useCheckAlerts = <TError = ErrorType<ApiMessage>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkAlerts>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof checkAlerts>>,
@@ -2402,11 +2481,11 @@ export const getMarkAlertReadUrl = (id: number,) => {
 }
 
 /**
- * @summary Mark an alert as read
+ * @summary Mark an alert as read (professionals only)
  */
-export const markAlertRead = async (id: number, options?: RequestInit): Promise<ApiMessage> => {
+export const markAlertRead = async (id: number, options?: RequestInit): Promise<Alert> => {
 
-  return customFetch<ApiMessage>(getMarkAlertReadUrl(id),
+  return customFetch<Alert>(getMarkAlertReadUrl(id),
   {
     ...options,
     method: 'PATCH'
@@ -2451,7 +2530,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type MarkAlertReadMutationError = ErrorType<ApiMessage>
 
     /**
- * @summary Mark an alert as read
+ * @summary Mark an alert as read (professionals only)
  */
 export const useMarkAlertRead = <TError = ErrorType<ApiMessage>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAlertRead>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings as SettingsIcon, Mail, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Settings as SettingsIcon, Mail, Save, CheckCircle2, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { useGetProfessionalProfile, useUpdateProfessionalProfile } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,10 @@ export default function Settings() {
 
   // Populate form once profile loads
   useEffect(() => {
-    if (profile?.notificationEmail) {
-      setNotificationEmail(profile.notificationEmail);
-    }
+    setNotificationEmail(profile?.notificationEmail ?? "");
   }, [profile?.notificationEmail]);
+
+  const isUsingDefault = !notificationEmail.trim();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,12 +26,27 @@ export default function Settings() {
     setSaveError(null);
 
     try {
-      await updateMutation.mutateAsync({ data: { notificationEmail } });
+      await updateMutation.mutateAsync({ data: { notificationEmail: notificationEmail.trim() || null } });
       setSaved(true);
       refetch();
       setTimeout(() => setSaved(false), 3000);
     } catch {
       setSaveError("Não foi possível salvar. Tente novamente.");
+    }
+  }
+
+  async function handleRemove() {
+    setSaved(false);
+    setSaveError(null);
+
+    try {
+      await updateMutation.mutateAsync({ data: { notificationEmail: null } });
+      setNotificationEmail("");
+      setSaved(true);
+      refetch();
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setSaveError("Não foi possível remover. Tente novamente.");
     }
   }
 
@@ -101,15 +116,21 @@ export default function Settings() {
                   onChange={(e) => setNotificationEmail(e.target.value)}
                   className="text-sm"
                 />
-                <p className="text-[11px] text-muted-foreground">
-                  Pode ser diferente do e-mail de login, útil em clínicas com vários profissionais.
-                </p>
+                {isUsingDefault ? (
+                  <p className="text-[11px] text-sky-600 dark:text-sky-400 font-medium">
+                    Usando o e-mail padrão do sistema (configurado pelo administrador).
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Pode ser diferente do e-mail de login, útil em clínicas com vários profissionais.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-1">
                 <Button
                   type="submit"
-                  disabled={updateMutation.isPending || !notificationEmail.trim()}
+                  disabled={updateMutation.isPending || isUsingDefault}
                   className="gap-2 font-bold bg-sky-600 hover:bg-sky-700 text-white"
                 >
                   {updateMutation.isPending ? (
@@ -119,6 +140,19 @@ export default function Settings() {
                   )}
                   Salvar
                 </Button>
+
+                {!isUsingDefault && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={updateMutation.isPending}
+                    onClick={handleRemove}
+                    className="gap-2 font-bold text-destructive border-destructive/40 hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Usar padrão do sistema
+                  </Button>
+                )}
 
                 {saved && (
                   <span className="flex items-center gap-1.5 text-sm font-bold text-emerald-600 dark:text-emerald-400">
