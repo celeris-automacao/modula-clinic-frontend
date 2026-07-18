@@ -468,6 +468,17 @@ export interface AlertItem {
   createdAt: string;
 }
 
+export interface PushTokenInput {
+  /** Expo push token from the patient's device */
+  token: string;
+}
+
+export interface NotifyResult {
+  ok: boolean;
+  sent: boolean;
+  message?: string;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */

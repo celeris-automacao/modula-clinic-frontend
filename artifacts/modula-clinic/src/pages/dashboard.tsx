@@ -3,16 +3,18 @@ import {
   useGetDashboardSummary,
   useListAlerts,
   useMarkAlertRead,
-  getListAlertsQueryKey,
+  useNotifyPatient,
   getListPatientsQueryKey,
   getGetDashboardSummaryQueryKey,
+  getListAlertsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { RiskBadge, TrendIcon, RadarScore } from "@/components/adherence-ui";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
-import { AlertCircle, ArrowRight, Activity, Users, FileText, BellRing, Check, LogIn, ShieldAlert } from "lucide-react";
+import { AlertCircle, ArrowRight, Activity, Users, FileText, BellRing, Check, Send, LogIn, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -43,7 +45,20 @@ export default function Dashboard() {
     mutate: (id: number) => markReadMutation.mutate({ id }),
     isPending: markReadMutation.isPending,
   };
+  const sendReminder = useNotifyPatient();
+  const [reminderSent, setReminderSent] = useState<Record<number, boolean>>({});
   const [, setLocation] = useLocation();
+
+  function handleSendReminder(e: React.MouseEvent, patientId: number) {
+    e.stopPropagation();
+    sendReminder.mutate({ id: patientId }, {
+      onSuccess: (data) => {
+        if (data.sent) {
+          setReminderSent((prev) => ({ ...prev, [patientId]: true }));
+        }
+      },
+    });
+  }
 
   const unreadAlerts = alerts?.filter((a) => !a.readAt) ?? [];
 
@@ -273,9 +288,26 @@ export default function Dashboard() {
                       )}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap text-right rounded-r-xl border-y border-r border-border group-hover:border-sky-200/60 transition-colors">
-                      <button className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-muted text-muted-foreground group-hover:bg-sky-500 group-hover:text-white group-hover:shadow-[0_4px_14px_0_rgba(14,165,233,0.35)] transition-all">
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {patient.riskLevel === "high" && (
+                          <button
+                            title={reminderSent[patient.id] ? "Lembrete enviado" : "Enviar lembrete ao paciente"}
+                            disabled={sendReminder.isPending || reminderSent[patient.id]}
+                            onClick={(e) => handleSendReminder(e, patient.id)}
+                            className={cn(
+                              "inline-flex items-center justify-center w-9 h-9 rounded-xl transition-all",
+                              reminderSent[patient.id]
+                                ? "bg-emerald-100 text-emerald-600 cursor-default"
+                                : "bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white hover:shadow-[0_4px_14px_0_rgba(244,63,94,0.35)]",
+                            )}
+                          >
+                            {reminderSent[patient.id] ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                          </button>
+                        )}
+                        <button className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-muted text-muted-foreground group-hover:bg-sky-500 group-hover:text-white group-hover:shadow-[0_4px_14px_0_rgba(14,165,233,0.35)] transition-all">
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

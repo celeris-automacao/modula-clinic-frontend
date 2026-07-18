@@ -37,6 +37,7 @@ import type {
   MeasurementPoint,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  NotifyResult,
   PatchPatientInput,
   Patient,
   PatientInput,
@@ -45,6 +46,7 @@ import type {
   ProgressPoint,
   Protocol,
   ProtocolInput,
+  PushTokenInput,
   TaskLogInput,
   TaskLogResult,
   TodayTask,
@@ -1149,6 +1151,149 @@ export function useGetLatestInsight<TData = Awaited<ReturnType<typeof getLatestI
 
 
 
+
+export const getRegisterPushTokenUrl = (id: number,) => {
+
+
+
+
+  return `/api/patients/${id}/push-token`
+}
+
+/**
+ * @summary Register an Expo push token for a patient's device
+ */
+export const registerPushToken = async (id: number,
+    pushTokenInput: PushTokenInput, options?: RequestInit): Promise<ApiMessage> => {
+
+  return customFetch<ApiMessage>(getRegisterPushTokenUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushTokenInput)
+  }
+);}
+
+
+
+
+
+export const getRegisterPushTokenMutationOptions = <TError = ErrorType<ApiMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{id: number;data: BodyType<PushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{id: number;data: BodyType<PushTokenInput>}, TContext> => {
+
+const mutationKey = ['registerPushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerPushToken>>, {id: number;data: BodyType<PushTokenInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  registerPushToken(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof registerPushToken>>>
+    export type RegisterPushTokenMutationBody = BodyType<PushTokenInput>
+    export type RegisterPushTokenMutationError = ErrorType<ApiMessage>
+
+    /**
+ * @summary Register an Expo push token for a patient's device
+ */
+export const useRegisterPushToken = <TError = ErrorType<ApiMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{id: number;data: BodyType<PushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerPushToken>>,
+        TError,
+        {id: number;data: BodyType<PushTokenInput>},
+        TContext
+      > => {
+      return useMutation(getRegisterPushTokenMutationOptions(options));
+    }
+
+export const getNotifyPatientUrl = (id: number,) => {
+
+
+
+
+  return `/api/patients/${id}/notify`
+}
+
+/**
+ * @summary Send a push reminder to a patient's device (professional only)
+ */
+export const notifyPatient = async (id: number, options?: RequestInit): Promise<NotifyResult> => {
+
+  return customFetch<NotifyResult>(getNotifyPatientUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getNotifyPatientMutationOptions = <TError = ErrorType<ApiMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notifyPatient>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof notifyPatient>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['notifyPatient'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof notifyPatient>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  notifyPatient(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NotifyPatientMutationResult = NonNullable<Awaited<ReturnType<typeof notifyPatient>>>
+
+    export type NotifyPatientMutationError = ErrorType<ApiMessage>
+
+    /**
+ * @summary Send a push reminder to a patient's device (professional only)
+ */
+export const useNotifyPatient = <TError = ErrorType<ApiMessage>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notifyPatient>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof notifyPatient>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getNotifyPatientMutationOptions(options));
+    }
 
 export const getGenerateInsightUrl = (id: number,) => {
 
